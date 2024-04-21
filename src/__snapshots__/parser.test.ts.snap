@@ -1,0 +1,108 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`parse example.mgsdl 1`] = `
+{
+  "documents": {
+    "Project": {
+      "schema": {
+        "creator": {
+          "dataType": {
+            "refDocument": "User",
+            "type": "ObjectId",
+          },
+          "isIndex": true,
+          "isRequired": true,
+          "isUnique": false,
+        },
+        "details": {
+          "dataType": {
+            "refSchema": "ProjectDetails",
+            "type": "Schema",
+          },
+          "isIndex": false,
+          "isRequired": true,
+          "isUnique": false,
+        },
+      },
+    },
+    "User": {
+      "schema": {
+        "email": {
+          "dataType": {
+            "type": "String",
+          },
+          "isIndex": true,
+          "isRequired": true,
+          "isUnique": true,
+        },
+        "name": {
+          "dataType": {
+            "type": "String",
+          },
+          "isIndex": false,
+          "isRequired": false,
+          "isUnique": false,
+        },
+        "status": {
+          "dataType": {
+            "refEnum": "UserStatus",
+            "type": "Enum",
+          },
+          "isIndex": false,
+          "isRequired": true,
+          "isUnique": false,
+        },
+      },
+    },
+  },
+  "enums": {
+    "UserStatus": {
+      "values": [
+        "Pending",
+        "Active",
+        "Inactive",
+      ],
+    },
+  },
+  "schemas": {
+    "ProjectDetails": {
+      "alternateNames": {
+        "dataType": {
+          "elementRequired": true,
+          "elementType": {
+            "type": "String",
+          },
+          "type": "Array",
+        },
+        "isIndex": false,
+        "isRequired": true,
+        "isUnique": false,
+      },
+      "isActive": {
+        "dataType": {
+          "type": "Boolean",
+        },
+        "isIndex": false,
+        "isRequired": true,
+        "isUnique": false,
+      },
+      "name": {
+        "dataType": {
+          "type": "String",
+        },
+        "isIndex": false,
+        "isRequired": true,
+        "isUnique": false,
+      },
+      "number": {
+        "dataType": {
+          "type": "Number",
+        },
+        "isIndex": false,
+        "isRequired": false,
+        "isUnique": true,
+      },
+    },
+  },
+}
+`;

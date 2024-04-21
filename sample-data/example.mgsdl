@@ -1,0 +1,23 @@
+enum UserStatus {
+  Pending
+  Active
+  Inactive
+}
+
+document User {
+  email: String! @index @unique
+  name: String
+  status: UserStatus!
+}
+
+document Project {
+  creator: User! @index
+  details: ProjectDetails!
+}
+
+schema ProjectDetails {
+  name: String!
+  alternateNames: [String!]!
+  number: Number @unique
+  isActive: Boolean!
+}
