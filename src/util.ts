@@ -5,6 +5,10 @@ export function unwrap<T>(input: T | null | undefined): T {
   return input;
 }
 
+export function notNullOrUndefined<T>(input: T | null | undefined): input is T {
+  return input !== null && input !== undefined;
+}
+
 export function uniqueValues<T>(input: T[]): T[] {
   const set = new Set<T>(input);
   return Array.from(set);

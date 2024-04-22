@@ -1,9 +1,10 @@
+import { generateMongoose } from './generator/mongoose';
+import { generateTypes } from './generator/types';
 import { DbDefinition } from './types';
 
-export async function generateTypes(sdl: DbDefinition): Promise<string> {
-  return '';
-}
+export function generate(sdl: DbDefinition): string {
+  const types = generateTypes(sdl);
+  const mongoose = generateMongoose(sdl);
 
-export async function generateMongoose(sdl: DbDefinition): Promise<string> {
-  return '';
+  return `${types}\n\n${mongoose}`;
 }
