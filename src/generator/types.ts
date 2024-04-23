@@ -35,6 +35,8 @@ function getTypeName(field: SchemaDataType): string {
       return 'boolean';
     case 'Number':
       return 'number';
+    case 'Date':
+      return 'Date';
     case 'Enum':
       return field.refEnum;
     case 'Schema':

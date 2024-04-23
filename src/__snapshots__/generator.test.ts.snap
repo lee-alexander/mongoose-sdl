@@ -34,6 +34,7 @@ export interface ProjectDetailsSchemaDocument extends Document {
   alternateNames: string[];
   number: number | null | undefined;
   isActive: boolean;
+  startDate: Date | null | undefined;
 }
 
 import { Schema, model } from 'mongoose';
@@ -43,6 +44,7 @@ const ProjectDetailsSchema = new Schema<ProjectDetailsSchemaDocument>(
     alternateNames: { required: true, type: [{ type: String, required: true }] },
     number: { unique: true, type: Number },
     isActive: { required: true, type: Boolean },
+    startDate: { type: Date },
   },
   { timestamps: true }
 )

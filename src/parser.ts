@@ -104,7 +104,7 @@ function parseModelContents(contents: string, namedTypes: NamedTypes): Model {
 }
 
 function parseDataType(fieldName: string, fieldType: string, namedTypes: NamedTypes): SchemaDataTypeWithoutArray {
-  if (fieldType === 'String' || fieldType === 'Boolean' || fieldType === 'Number') {
+  if (fieldType === 'String' || fieldType === 'Boolean' || fieldType === 'Number' || fieldType === 'Date') {
     return { type: fieldType };
   }
 

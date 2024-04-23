@@ -56,6 +56,7 @@ function getSchemaFieldDataDefinition(data: SchemaDataTypeWithoutArray): string 
     case 'String':
     case 'Boolean':
     case 'Number':
+    case 'Date':
       return `type: ${data.type}`;
     case 'Enum':
       return `type: String, enum: ${data.refEnum}`;

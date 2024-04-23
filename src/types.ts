@@ -31,7 +31,7 @@ export interface SchemaField {
 
 export type SchemaDataType =
   | {
-      type: 'String' | 'Number' | 'Boolean';
+      type: 'String' | 'Number' | 'Boolean' | 'Date';
     }
   | {
       type: 'Enum';
