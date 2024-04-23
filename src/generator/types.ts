@@ -17,7 +17,12 @@ function generateEnumType(name: string, data: Enum) {
 function generateSchemaType(name: string, data: Schema) {
   const defaultFields = ['  id: string;', '  createdAt: Date;', '  updatedAt: Date;'].join('\n');
   const customFields = Object.entries(data)
-    .map(([name, data]) => `  ${name}: ${getTypeName(data.dataType)}${data.isRequired ? '' : ' | null | undefined'};`)
+    .map(
+      ([name, data]) =>
+        `  ${data.isImmutable ? 'readonly ' : ''}${name}: ${getTypeName(data.dataType)}${
+          data.isRequired ? '' : ' | null | undefined'
+        };`
+    )
     .join('\n');
 
   return `export interface ${name} extends Document {\n${defaultFields}\n${customFields}\n}`;

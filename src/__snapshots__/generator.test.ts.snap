@@ -33,7 +33,7 @@ export interface ProjectDetailsSchemaDocument extends Document {
   name: string;
   alternateNames: string[];
   number: number | null | undefined;
-  isActive: boolean;
+  readonly isActive: boolean;
   startDate: Date | null | undefined;
 }
 
@@ -43,7 +43,7 @@ const ProjectDetailsSchema = new Schema<ProjectDetailsSchemaDocument>(
     name: { required: true, type: String },
     alternateNames: { required: true, type: [{ type: String, required: true }] },
     number: { unique: true, type: Number },
-    isActive: { required: true, type: Boolean },
+    isActive: { required: true, immutable: true, type: Boolean },
     startDate: { type: Date },
   },
   { timestamps: true }

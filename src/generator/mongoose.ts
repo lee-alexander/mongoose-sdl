@@ -37,6 +37,7 @@ function getSchemaFieldDefinition(field: SchemaField): string {
     field.isRequired ? 'required: true' : null,
     field.isIndex ? 'index: true' : null,
     field.isUnique ? 'unique: true' : null,
+    field.isImmutable ? 'immutable: true' : null,
   ];
 
   let customDefinition: string;

@@ -19,6 +19,6 @@ schema ProjectDetails {
   name: String!
   alternateNames: [String!]!
   number: Number @unique
-  isActive: Boolean!
+  isActive: Boolean! @immutable
   startDate: Date
 }

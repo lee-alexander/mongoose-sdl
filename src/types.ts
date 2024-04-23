@@ -27,6 +27,7 @@ export interface SchemaField {
   isRequired: boolean;
   isIndex: boolean;
   isUnique: boolean;
+  isImmutable: boolean;
 }
 
 export type SchemaDataType =

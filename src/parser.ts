@@ -93,6 +93,7 @@ function parseSchemaContents(contents: string, namedTypes: NamedTypes): Schema {
       isRequired: f.isRequired,
       isIndex: f.directives.includes('index'),
       isUnique: f.directives.includes('unique'),
+      isImmutable: f.directives.includes('immutable'),
     })
   );
 }
