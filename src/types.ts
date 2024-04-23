@@ -5,8 +5,8 @@ export interface DbDefinition {
   enums: {
     [enumName: string]: Enum;
   };
-  documents: {
-    [documentName: string]: Document;
+  models: {
+    [modelName: string]: Model;
   };
 }
 
@@ -14,7 +14,7 @@ export interface Enum {
   values: string[];
 }
 
-export interface Document {
+export interface Model {
   schema: Schema;
 }
 
@@ -39,7 +39,7 @@ export type SchemaDataType =
     }
   | {
       type: 'ObjectId';
-      refDocument: string;
+      refModel: string;
     }
   | {
       type: 'Schema';

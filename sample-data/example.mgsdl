@@ -4,13 +4,13 @@ enum UserStatus {
   Inactive
 }
 
-document User {
+model User {
   email: String! @index @unique
   name: String
   status: UserStatus!
 }
 
-document Project {
+model Project {
   creator: User! @index
   details: ProjectDetails!
 }

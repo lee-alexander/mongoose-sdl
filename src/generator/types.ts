@@ -1,14 +1,12 @@
-import { DbDefinition, Enum, Schema, SchemaDataType, Document } from '../types';
+import { DbDefinition, Enum, Schema, SchemaDataType, Model } from '../types';
 import { assertUnreachable } from '../util';
 
 export function generateTypes(sdl: DbDefinition): string {
   const enums = Object.entries(sdl.enums).map(([name, data]) => generateEnumType(name, data));
-  const documents = Object.entries(sdl.documents).map(([name, data]) =>
-    generateDocumentType(getDocumentTypeName(name), data)
-  );
+  const models = Object.entries(sdl.models).map(([name, data]) => generateModelType(getModelTypeName(name), data));
   const schemas = Object.entries(sdl.schemas).map(([name, data]) => generateSchemaType(getSchemaTypeName(name), data));
 
-  return [`import { Types, Document } from 'mongoose';`, ...enums, ...documents, ...schemas].join('\n\n');
+  return [`import { Types, Document } from 'mongoose';`, ...enums, ...models, ...schemas].join('\n\n');
 }
 
 function generateEnumType(name: string, data: Enum) {
@@ -25,8 +23,8 @@ function generateSchemaType(name: string, data: Schema) {
   return `export interface ${name} extends Document {\n${defaultFields}\n${customFields}\n}`;
 }
 
-function generateDocumentType(name: string, document: Document) {
-  return generateSchemaType(name, document.schema);
+function generateModelType(name: string, model: Model) {
+  return generateSchemaType(name, model.schema);
 }
 
 function getTypeName(field: SchemaDataType): string {
@@ -56,6 +54,6 @@ export function getSchemaTypeName(name: string) {
   return `${name}SchemaDocument`;
 }
 
-function getDocumentTypeName(name: string) {
+export function getModelTypeName(name: string) {
   return `${name}Document`;
 }

@@ -1,9 +1,9 @@
 import { promises as fs } from 'fs';
 import { groupItemsBy, toDictionary, uniqueValues, unwrap } from './util';
-import { Enum, Schema, Document, DbDefinition, SchemaDataTypeWithoutArray } from './types';
+import { Enum, Schema, Model, DbDefinition, SchemaDataTypeWithoutArray } from './types';
 
-// Break overall document down into key sections - enums, documents, schemas
-const TopLevelRegex = /(enum|document|schema) ([^{]*) {([^}]*)}/g;
+// Break overall document down into key sections - enums, models, schemas
+const TopLevelRegex = /(enum|model|schema) ([^{]*) {([^}]*)}/g;
 
 export async function parseDbDefinitionFile(path: string): Promise<DbDefinition> {
   const fileBuffer = await fs.readFile(path);
@@ -17,13 +17,13 @@ export async function parseDbDefinitionFile(path: string): Promise<DbDefinition>
 
   const contentByType = groupItemsBy(
     parsedContent,
-    ([, type]) => type as 'enum' | 'document' | 'schema',
+    ([, type]) => type as 'enum' | 'model' | 'schema',
     ([, , name, contents]) => ({ name, contents })
   );
 
   const namedTypes: NamedTypes = {
     enums: new Set((contentByType['enum'] ?? []).map((d) => d.name)),
-    documents: new Set((contentByType['document'] ?? []).map((d) => d.name)),
+    models: new Set((contentByType['model'] ?? []).map((d) => d.name)),
     schemas: new Set((contentByType['schema'] ?? []).map((d) => d.name)),
   };
 
@@ -39,13 +39,13 @@ export async function parseDbDefinitionFile(path: string): Promise<DbDefinition>
     ({ contents }) => parseSchemaContents(contents, namedTypes)
   );
 
-  const documents = toDictionary(
-    contentByType['document'] ?? [],
+  const models = toDictionary(
+    contentByType['model'] ?? [],
     ({ name }) => name,
-    ({ contents }) => parseDocumentContents(contents, namedTypes)
+    ({ contents }) => parseModelContents(contents, namedTypes)
   );
 
-  return { enums, schemas, documents };
+  return { enums, schemas, models };
 }
 
 function parseEnumContents(contents: string): Enum {
@@ -97,7 +97,7 @@ function parseSchemaContents(contents: string, namedTypes: NamedTypes): Schema {
   );
 }
 
-function parseDocumentContents(contents: string, namedTypes: NamedTypes): Document {
+function parseModelContents(contents: string, namedTypes: NamedTypes): Model {
   return {
     schema: parseSchemaContents(contents, namedTypes),
   };
@@ -115,10 +115,10 @@ function parseDataType(fieldName: string, fieldType: string, namedTypes: NamedTy
     };
   }
 
-  if (namedTypes.documents.has(fieldType)) {
+  if (namedTypes.models.has(fieldType)) {
     return {
       type: 'ObjectId',
-      refDocument: fieldType,
+      refModel: fieldType,
     };
   }
 
@@ -135,5 +135,5 @@ function parseDataType(fieldName: string, fieldType: string, namedTypes: NamedTy
 interface NamedTypes {
   enums: Set<string>;
   schemas: Set<string>;
-  documents: Set<string>;
+  models: Set<string>;
 }

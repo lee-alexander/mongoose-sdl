@@ -1,6 +1,6 @@
-import { DbDefinition, Schema, SchemaField, SchemaDataTypeWithoutArray, Document } from '../types';
+import { DbDefinition, Schema, SchemaField, SchemaDataTypeWithoutArray, Model } from '../types';
 import { assertUnreachable, notNullOrUndefined } from '../util';
-import { getSchemaTypeName } from './types';
+import { getModelTypeName, getSchemaTypeName } from './types';
 
 export function generateMongoose(sdl: DbDefinition): string {
   // TODO - DAG ordering for schemas by dependencies
@@ -9,15 +9,17 @@ export function generateMongoose(sdl: DbDefinition): string {
   const schemas = Object.entries(sdl.schemas).map(([name, data]) =>
     generateSchema(getSchemaName(name), getSchemaTypeName(name), data)
   );
-  const documents = Object.entries(sdl.documents).map(([name, data]) => generateDocument(name, data));
+  const models = Object.entries(sdl.models).map(([name, data]) => generateModel(name, data));
 
-  return [`import { Schema, model } from 'mongoose';`, ...schemas, ...documents].join('\n');
+  return [`import { Schema, model } from 'mongoose';`, ...schemas, ...models].join('\n');
 }
 
-function generateDocument(name: string, document: Document) {
-  const schema = generateSchema(getSchemaName(name), getDocumentName(name), document.schema);
-  const model = `export const ${name}Model = model<${getDocumentName(name)}>('${name}', ${getSchemaName(name)});`;
-  return `${schema}\n\n${model}\n`;
+function generateModel(name: string, model: Model) {
+  const schemaContent = generateSchema(getSchemaName(name), getModelTypeName(name), model.schema);
+  const modelContent = `export const ${getModelName(name)} = model<${getModelTypeName(
+    name
+  )}>('${name}', ${getSchemaName(name)});`;
+  return `${schemaContent}\n\n${modelContent}\n`;
 }
 
 function generateSchema(name: string, typeName: string, data: Schema) {
@@ -58,7 +60,7 @@ function getSchemaFieldDataDefinition(data: SchemaDataTypeWithoutArray): string 
     case 'Enum':
       return `type: String, enum: ${data.refEnum}`;
     case 'ObjectId':
-      return `type: Schema.Types.ObjectId, ref: '${data.refDocument}'`;
+      return `type: Schema.Types.ObjectId, ref: '${data.refModel}'`;
     case 'Schema':
       return `type: ${getSchemaName(data.refSchema)}`;
     default:
@@ -69,6 +71,7 @@ function getSchemaFieldDataDefinition(data: SchemaDataTypeWithoutArray): string 
 function getSchemaName(name: string) {
   return `${name}Schema`;
 }
-function getDocumentName(name: string) {
-  return `${name}Document`;
+
+function getModelName(name: string) {
+  return `${name}Model`;
 }

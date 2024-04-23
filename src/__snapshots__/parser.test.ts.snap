@@ -2,12 +2,21 @@
 
 exports[`parse example.mgsdl 1`] = `
 {
-  "documents": {
+  "enums": {
+    "UserStatus": {
+      "values": [
+        "Pending",
+        "Active",
+        "Inactive",
+      ],
+    },
+  },
+  "models": {
     "Project": {
       "schema": {
         "creator": {
           "dataType": {
-            "refDocument": "User",
+            "refModel": "User",
             "type": "ObjectId",
           },
           "isIndex": true,
@@ -53,15 +62,6 @@ exports[`parse example.mgsdl 1`] = `
           "isUnique": false,
         },
       },
-    },
-  },
-  "enums": {
-    "UserStatus": {
-      "values": [
-        "Pending",
-        "Active",
-        "Inactive",
-      ],
     },
   },
   "schemas": {
