@@ -1,35 +1,41 @@
-import { DbDefinition, Schema, SchemaField, FlatSchemaDataType, Model } from '../types';
+import { sortSchemasTopologically } from './util/topological-sort';
+import { DbDefinition, Schema, SchemaField, FlatSchemaDataType, Model, SchemaDataType } from '../types';
 import { assertUnreachable, notNullOrUndefined } from '../util';
 import { getModelTypeName, getSchemaTypeName } from './types';
 
 export function generateMongoose(sdl: DbDefinition): string {
-  // TODO - DAG ordering for schemas by dependencies
-  // TODO handle recursive schemas
+  const sortedSchemas = sortSchemasTopologically(sdl.schemas);
+  const schemaContent = sortedSchemas.map(({ name, schema }) => generateSchema(name, getSchemaTypeName(name), schema));
+  const modelContent = Object.entries(sdl.models).map(([name, data]) => generateModel(name, data));
 
-  const schemas = Object.entries(sdl.schemas).map(([name, data]) =>
-    generateSchema(getSchemaName(name), getSchemaTypeName(name), data)
-  );
-  const models = Object.entries(sdl.models).map(([name, data]) => generateModel(name, data));
-
-  return [`import { Schema, model } from 'mongoose';`, ...schemas, ...models].join('\n');
+  return [`import { Schema, model } from 'mongoose';`, ...schemaContent, ...modelContent].join('\n\n');
 }
 
 function generateModel(name: string, model: Model) {
-  const schemaContent = generateSchema(getSchemaName(name), getModelTypeName(name), model.schema);
+  const schemaContent = generateSchema(name, getModelTypeName(name), model.schema);
   const modelContent = `export const ${getModelName(name)} = model<${getModelTypeName(
     name
   )}>('${name}', ${getSchemaName(name)});`;
-  return `${schemaContent}\n\n${modelContent}\n`;
+  return `${schemaContent}\n\n${modelContent}`;
 }
 
-function generateSchema(name: string, typeName: string, data: Schema) {
-  return `const ${name} = new Schema<${typeName}>(
-  {\n${Object.entries(data)
-    .map(([name, data]) => `    ${name}: ${getSchemaFieldDefinition(data)},`)
-    .join('\n')}
+function generateSchema(name: string, typeName: string, schema: Schema) {
+  const schemaFieldContent = Object.entries(schema)
+    .map(([fieldName, data]) =>
+      getSchemaRef(data.dataType) === name ? null : `    ${fieldName}: ${getSchemaFieldDefinition(data)},`
+    )
+    .filter(notNullOrUndefined)
+    .join('\n');
+
+  const recursivePatchContent = Object.entries(schema)
+    .filter(([, data]) => getSchemaRef(data.dataType) === name)
+    .map(([fieldName, data]) => `${getSchemaName(name)}.add({ ${fieldName}: ${getSchemaFieldDefinition(data)} });`)
+    .join('\n');
+
+  return `const ${getSchemaName(name)} = new Schema<${typeName}>(
+  {\n${schemaFieldContent}
   },
-  { timestamps: true }
-)`;
+  { timestamps: true }\n);${recursivePatchContent ? `\n${recursivePatchContent}` : ''}`;
 }
 
 function getSchemaFieldDefinition(field: SchemaField): string {
@@ -70,6 +76,26 @@ function getSchemaFieldDataDefinition(data: FlatSchemaDataType): string {
       return `type: ${getSchemaName(data.refSchema)}`;
     default:
       assertUnreachable(data);
+  }
+}
+
+export function getSchemaRef(schema: SchemaDataType): string | null {
+  switch (schema.type) {
+    case 'String':
+    case 'Number':
+    case 'Boolean':
+    case 'Date':
+    case 'Enum':
+    case 'ObjectId':
+      return null;
+    case 'Schema':
+      return schema.refSchema;
+    case 'Array':
+      return getSchemaRef(schema.elementType);
+    case 'Map':
+      return getSchemaRef(schema.elementType);
+    default:
+      assertUnreachable(schema);
   }
 }
 

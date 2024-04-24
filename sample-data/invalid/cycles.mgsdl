@@ -1,0 +1,7 @@
+schema Schema1 {
+  ref: Schema2
+}
+
+schema Schema2 {
+  ref: Schema1!
+}

@@ -22,12 +22,12 @@ export function groupItemsBy<TInput, TKey extends string, TOutput>(
   return items.reduce((result, item) => {
     const groupKey = grouper(item);
     if (result[groupKey]) {
-      result[groupKey]!.push(valueSelector(item));
+      result[groupKey].push(valueSelector(item));
     } else {
       result[groupKey] = [valueSelector(item)];
     }
     return result;
-  }, {} as { [group in TKey]?: TOutput[] });
+  }, {} as { [group in TKey]: TOutput[] });
 }
 
 export function toDictionary<T, V>(

@@ -40,6 +40,7 @@ export interface ProjectDetailsSchemaDocument extends Document {
 }
 
 import { Schema, model } from 'mongoose';
+
 const ProjectDetailsSchema = new Schema<ProjectDetailsSchemaDocument>(
   {
     name: { required: true, type: String },
@@ -49,7 +50,8 @@ const ProjectDetailsSchema = new Schema<ProjectDetailsSchemaDocument>(
     startDate: { type: Date },
   },
   { timestamps: true }
-)
+);
+
 const UserSchema = new Schema<UserDocument>(
   {
     email: { required: true, index: true, unique: true, type: String },
@@ -57,7 +59,7 @@ const UserSchema = new Schema<UserDocument>(
     status: { required: true, type: String, enum: UserStatus },
   },
   { timestamps: true }
-)
+);
 
 export const UserModel = model<UserDocument>('User', UserSchema);
 
@@ -69,8 +71,79 @@ const ProjectSchema = new Schema<ProjectDocument>(
     detailsByUserId: { immutable: true, type: Map, of: { type: ProjectDetailsSchema, required: true } },
   },
   { timestamps: true }
-)
+);
 
-export const ProjectModel = model<ProjectDocument>('Project', ProjectSchema);
-"
+export const ProjectModel = model<ProjectDocument>('Project', ProjectSchema);"
+`;
+
+exports[`generate topological-ordering.mgsdl 1`] = `
+"import { Types, Document } from 'mongoose';
+
+export interface ProjectDocument extends Document {
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+  name: string;
+  details: ProjectDetailsSchemaDocument;
+}
+
+export interface CompanySchemaDocument extends Document {
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+  name: string | null | undefined;
+}
+
+export interface ContractorSchemaDocument extends Document {
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+  name: string;
+  company: CompanySchemaDocument | null | undefined;
+  parentContractor: ContractorSchemaDocument;
+}
+
+export interface ProjectDetailsSchemaDocument extends Document {
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+  name: string;
+  contractor: ContractorSchemaDocument;
+}
+
+import { Schema, model } from 'mongoose';
+
+const CompanySchema = new Schema<CompanySchemaDocument>(
+  {
+    name: { type: String },
+  },
+  { timestamps: true }
+);
+
+const ContractorSchema = new Schema<ContractorSchemaDocument>(
+  {
+    name: { required: true, type: String },
+    company: { type: CompanySchema },
+  },
+  { timestamps: true }
+);
+ContractorSchema.add({ parentContractor: { required: true, type: ContractorSchema } });
+
+const ProjectDetailsSchema = new Schema<ProjectDetailsSchemaDocument>(
+  {
+    name: { required: true, type: String },
+    contractor: { required: true, type: ContractorSchema },
+  },
+  { timestamps: true }
+);
+
+const ProjectSchema = new Schema<ProjectDocument>(
+  {
+    name: { required: true, type: String },
+    details: { required: true, type: ProjectDetailsSchema },
+  },
+  { timestamps: true }
+);
+
+export const ProjectModel = model<ProjectDocument>('Project', ProjectSchema);"
 `;

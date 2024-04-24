@@ -1,0 +1,19 @@
+model Project {
+  name: String!
+  details: ProjectDetails!
+}
+
+schema Company {
+  name: String
+}
+
+schema Contractor {
+  name: String!
+  company: Company
+  parentContractor: Contractor!
+}
+
+schema ProjectDetails {
+  name: String!
+  contractor: Contractor!
+}
