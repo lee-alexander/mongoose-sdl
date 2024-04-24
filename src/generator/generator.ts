@@ -1,6 +1,6 @@
-import { generateMongoose } from './generator/mongoose';
-import { generateTypes } from './generator/types';
-import { DbDefinition } from './types';
+import { generateMongoose } from './mongoose';
+import { generateTypes } from './types';
+import { DbDefinition } from '../types';
 
 export function generate(sdl: DbDefinition): string {
   const types = generateTypes(sdl);

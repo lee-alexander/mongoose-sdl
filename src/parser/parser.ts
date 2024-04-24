@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs';
-import { groupItemsBy, toDictionary, uniqueValues, unwrap } from './util';
-import { Enum, Schema, Model, DbDefinition, FlatSchemaDataType } from './types';
+import { groupItemsBy, toDictionary, uniqueValues, unwrap } from '../util';
+import { Enum, Schema, Model, DbDefinition, FlatSchemaDataType } from '../types';
 
 // Break overall document down into key sections - enums, models, schemas
 const TopLevelRegex = /(enum|model|schema) ([^{]*) {([^}]*)}/g;

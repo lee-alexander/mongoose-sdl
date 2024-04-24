@@ -1,5 +1,5 @@
 import { generate } from './generator';
-import { parseDbDefinitionFile } from './parser';
+import { parseDbDefinitionFile } from '../parser/parser';
 
 test('generate example.mgsdl', async () => {
   const definition = await parseDbDefinitionFile('./sample-data/example.mgsdl');
