@@ -124,7 +124,7 @@ There are a few built-in data types for fields. `!` can be appended to indicate 
 - `String`
 - `Date`
 - Arrays use GQL syntax - e.g. `[Number]` or `[Number!]`. Elements can be any built-in type or custom model, schema, enum
-- Maps use a custom syntax - e.g. `Map<Number>` or `Map<Number!>`. Elements can be any built-in type of custom model, schema, enum
+- Maps use a custom syntax - e.g. `Map<Number>` or `Map<Number!>`. Elements can be any built-in type or custom model, schema, or enum
 
 Directives customize generation behavior on fields:
 
