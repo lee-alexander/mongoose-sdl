@@ -126,6 +126,12 @@ There are a few built-in data types for fields. `!` can be appended to indicate 
 - Arrays use GQL syntax - e.g. `[Number]` or `[Number!]`. Elements can be any built-in type or custom model, schema, enum
 - Maps use a custom syntax - e.g. `Map<Number>` or `Map<Number!>`. Elements can be any built-in type of custom model, schema, enum
 
+Directives customize generation behavior on fields:
+
+- `@index`
+- `@unique`
+- `@immutable`
+
 ## Relationships
 
 When a schema is specified as the type of a field, it will be directly embedded in the parent schema or model. Recursive schema definitions are supported.
