@@ -34,6 +34,33 @@ exports[`parse example.mgsdl 1`] = `
           "isRequired": true,
           "isUnique": false,
         },
+        "detailsByUserId": {
+          "dataType": {
+            "elementRequired": true,
+            "elementType": {
+              "refSchema": "ProjectDetails",
+              "type": "Schema",
+            },
+            "type": "Map",
+          },
+          "isImmutable": true,
+          "isIndex": false,
+          "isRequired": false,
+          "isUnique": false,
+        },
+        "lastAccessedByUserId": {
+          "dataType": {
+            "elementRequired": false,
+            "elementType": {
+              "type": "String",
+            },
+            "type": "Map",
+          },
+          "isImmutable": false,
+          "isIndex": false,
+          "isRequired": true,
+          "isUnique": false,
+        },
       },
     },
     "User": {

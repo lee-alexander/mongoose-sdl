@@ -24,6 +24,8 @@ export interface ProjectDocument extends Document {
   updatedAt: Date;
   creator: Types.ObjectId;
   details: ProjectDetailsSchemaDocument;
+  lastAccessedByUserId: Map<string, string | null>;
+  readonly detailsByUserId: Map<string, ProjectDetailsSchemaDocument> | null | undefined;
 }
 
 export interface ProjectDetailsSchemaDocument extends Document {
@@ -63,6 +65,8 @@ const ProjectSchema = new Schema<ProjectDocument>(
   {
     creator: { required: true, index: true, type: Schema.Types.ObjectId, ref: 'User' },
     details: { required: true, type: ProjectDetailsSchema },
+    lastAccessedByUserId: { required: true, type: Map, of: { type: String } },
+    detailsByUserId: { immutable: true, type: Map, of: { type: ProjectDetailsSchema, required: true } },
   },
   { timestamps: true }
 )

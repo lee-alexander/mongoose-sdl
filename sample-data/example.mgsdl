@@ -13,6 +13,8 @@ model User {
 model Project {
   creator: User! @index
   details: ProjectDetails!
+  lastAccessedByUserId: Map<String>!
+  detailsByUserId: Map<ProjectDetails!> @immutable
 }
 
 schema ProjectDetails {

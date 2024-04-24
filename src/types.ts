@@ -48,8 +48,13 @@ export type SchemaDataType =
     }
   | {
       type: 'Array';
-      elementType: SchemaDataTypeWithoutArray;
+      elementType: FlatSchemaDataType;
+      elementRequired: boolean;
+    }
+  | {
+      type: 'Map';
+      elementType: FlatSchemaDataType;
       elementRequired: boolean;
     };
 
-export type SchemaDataTypeWithoutArray = Exclude<SchemaDataType, { type: 'Array' }>;
+export type FlatSchemaDataType = Exclude<SchemaDataType, { type: 'Array' | 'Map' }>;

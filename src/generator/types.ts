@@ -52,6 +52,10 @@ function getTypeName(field: SchemaDataType): string {
       const elementType = getTypeName(field.elementType);
       return field.elementRequired ? `${elementType}[]` : `(${elementType} | null)[]`;
     }
+    case 'Map': {
+      const elementType = getTypeName(field.elementType);
+      return `Map<string, ${elementType}${field.elementRequired ? '' : ' | null'}>`;
+    }
     default:
       assertUnreachable(field);
   }

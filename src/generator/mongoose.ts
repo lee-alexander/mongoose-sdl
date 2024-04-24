@@ -1,4 +1,4 @@
-import { DbDefinition, Schema, SchemaField, SchemaDataTypeWithoutArray, Model } from '../types';
+import { DbDefinition, Schema, SchemaField, FlatSchemaDataType, Model } from '../types';
 import { assertUnreachable, notNullOrUndefined } from '../util';
 import { getModelTypeName, getSchemaTypeName } from './types';
 
@@ -41,10 +41,13 @@ function getSchemaFieldDefinition(field: SchemaField): string {
   ];
 
   let customDefinition: string;
-  if (field.dataType.type === 'Array') {
+  if (field.dataType.type === 'Array' || field.dataType.type === 'Map') {
     const childType = getSchemaFieldDataDefinition(field.dataType.elementType);
-    const childFields = [childType, field.dataType.elementRequired ? 'required: true' : ''].join(', ');
-    customDefinition = `type: [{ ${childFields} }]`;
+    const childFields = [childType, field.dataType.elementRequired ? 'required: true' : null]
+      .filter(notNullOrUndefined)
+      .join(', ');
+    customDefinition =
+      field.dataType.type === 'Array' ? `type: [{ ${childFields} }]` : `type: Map, of: { ${childFields} }`;
   } else {
     customDefinition = getSchemaFieldDataDefinition(field.dataType);
   }
@@ -52,7 +55,7 @@ function getSchemaFieldDefinition(field: SchemaField): string {
   return `{ ${[...baseDefinition, customDefinition].filter(notNullOrUndefined).join(', ')} }`;
 }
 
-function getSchemaFieldDataDefinition(data: SchemaDataTypeWithoutArray): string {
+function getSchemaFieldDataDefinition(data: FlatSchemaDataType): string {
   switch (data.type) {
     case 'String':
     case 'Boolean':

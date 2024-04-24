@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs';
 import { groupItemsBy, toDictionary, uniqueValues, unwrap } from './util';
-import { Enum, Schema, Model, DbDefinition, SchemaDataTypeWithoutArray } from './types';
+import { Enum, Schema, Model, DbDefinition, FlatSchemaDataType } from './types';
 
 // Break overall document down into key sections - enums, models, schemas
 const TopLevelRegex = /(enum|model|schema) ([^{]*) {([^}]*)}/g;
@@ -58,10 +58,12 @@ function parseEnumContents(contents: string): Enum {
 // (1) key
 // (2) array element type, if array
 // (3) array element type is required (!), if array
-// (4) type, if not array
-// (5) type is required (!)
-// (6) directives
-const KeyValueDirectiveRegex = /(\w+): (?:\[(\w+)(!?)\]|(\w+))(!?)([^\n]*)/g;
+// (4) map element type, if map
+// (5) map element type is required (!), if map
+// (6) type, if not array or map
+// (7) type is required (!)
+// (8) directives
+const KeyValueDirectiveRegex = /(\w+): (?:\[(\w+)(!?)\]|Map<(\w+)(!?)>|(\w+))(!?)([^\n]*)/g;
 
 // Break down @directive1 @directive2 into (1) directive1 (2) directive2
 const DirectiveRegex = /@(\w+)/g;
@@ -69,11 +71,23 @@ const DirectiveRegex = /@(\w+)/g;
 function parseSchemaContents(contents: string, namedTypes: NamedTypes): Schema {
   const parsedContent = [...contents.matchAll(KeyValueDirectiveRegex)];
   const parsedFields = parsedContent.map(
-    ([, fieldName, arrayElementType, arrayElementRequired, nonArrayType, required, directives]) => ({
+    ([
+      ,
       fieldName,
-      fieldType: unwrap(nonArrayType || arrayElementType),
+      arrayElementType,
+      arrayElementRequired,
+      mapElementType,
+      mapElementRequired,
+      nonArrayType,
+      required,
+      directives,
+    ]) => ({
+      fieldName,
+      fieldType: unwrap(nonArrayType || arrayElementType || mapElementType),
       isArray: Boolean(arrayElementType),
       isArrayElementRequired: arrayElementRequired === '!',
+      isMap: Boolean(mapElementType),
+      isMapElementRequired: mapElementRequired === '!',
       isRequired: required === '!',
       directives: directives ? [...directives.matchAll(DirectiveRegex)].map(([, directive]) => directive) : [],
     })
@@ -88,6 +102,12 @@ function parseSchemaContents(contents: string, namedTypes: NamedTypes): Schema {
             type: 'Array' as const,
             elementType: parseDataType(f.fieldName, f.fieldType, namedTypes),
             elementRequired: f.isArrayElementRequired,
+          }
+        : f.isMap
+        ? {
+            type: 'Map' as const,
+            elementType: parseDataType(f.fieldName, f.fieldType, namedTypes),
+            elementRequired: f.isMapElementRequired,
           }
         : parseDataType(f.fieldName, f.fieldType, namedTypes),
       isRequired: f.isRequired,
@@ -104,7 +124,7 @@ function parseModelContents(contents: string, namedTypes: NamedTypes): Model {
   };
 }
 
-function parseDataType(fieldName: string, fieldType: string, namedTypes: NamedTypes): SchemaDataTypeWithoutArray {
+function parseDataType(fieldName: string, fieldType: string, namedTypes: NamedTypes): FlatSchemaDataType {
   if (fieldType === 'String' || fieldType === 'Boolean' || fieldType === 'Number' || fieldType === 'Date') {
     return { type: fieldType };
   }
