@@ -4,6 +4,6 @@
     "target": "ESNext",
     "moduleResolution": "NodeNext",
     "module": "NodeNext",
-    "noEmit": true
+    "outDir": "dist"
   }
 }

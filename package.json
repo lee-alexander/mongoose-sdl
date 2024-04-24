@@ -1,13 +1,13 @@
 {
-  "name": "mongoose-sdl",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "@rlalexander31/mongoose-sdl",
+  "version": "0.0.3",
+  "description": "Codegen util to generate TS definitions and Mongoose schemas from a custom SDL format",
   "scripts": {
     "test": "jest",
-    "typecheck": "tsc"
+    "build": "tsc"
   },
-  "author": "",
+  "bin": "./cli.mjs",
+  "author": "Lee Alexander",
   "license": "ISC",
   "devDependencies": {
     "@types/jest": "^29.5.12",
