@@ -8,7 +8,7 @@ const TopLevelRegex = /(enum|model|schema) ([^{]*) {([^}]*)}/g;
 export async function parseDbDefinitionFile(path: string): Promise<DbDefinition> {
   const fileBuffer = await fs.readFile(path);
   const contents = fileBuffer.toString();
-  const parsedContent = [...contents.matchAll(TopLevelRegex)];
+  const parsedContent = parseContent(contents, TopLevelRegex);
 
   const namesWithType = parsedContent.map(([, type, name]) => `${name}${type}`);
   if (namesWithType.length !== uniqueValues(namesWithType).length) {
@@ -48,9 +48,12 @@ export async function parseDbDefinitionFile(path: string): Promise<DbDefinition>
   return { enums, schemas, models };
 }
 
+const EnumRegex = /(\w+)/g;
 function parseEnumContents(contents: string): Enum {
+  const values = parseContent(contents, EnumRegex);
+
   return {
-    values: contents.trim().split(/\s+/g),
+    values: values.map(([value]) => value),
   };
 }
 
@@ -69,7 +72,7 @@ const KeyValueDirectiveRegex = /(\w+): (?:\[(\w+)(!?)\]|Map<(\w+)(!?)>|(\w+))(!?
 const DirectiveRegex = /@(\w+)/g;
 
 function parseSchemaContents(contents: string, namedTypes: NamedTypes): Schema {
-  const parsedContent = [...contents.matchAll(KeyValueDirectiveRegex)];
+  const parsedContent = parseContent(contents, KeyValueDirectiveRegex);
   const parsedFields = parsedContent.map(
     ([
       ,
@@ -89,9 +92,16 @@ function parseSchemaContents(contents: string, namedTypes: NamedTypes): Schema {
       isMap: Boolean(mapElementType),
       isMapElementRequired: mapElementRequired === '!',
       isRequired: required === '!',
-      directives: directives ? [...directives.matchAll(DirectiveRegex)].map(([, directive]) => directive) : [],
+      directives: directives ? parseContent(directives, DirectiveRegex).map(([, directive]) => directive) : [],
     })
   );
+
+  const invalidDirectives = parsedFields
+    .flatMap((f) => f.directives)
+    .filter((d) => d !== 'index' && d !== 'unique' && d !== 'immutable');
+  if (invalidDirectives.length > 0) {
+    throw new Error('Unknown directives: ' + invalidDirectives);
+  }
 
   return toDictionary(
     parsedFields,
@@ -157,4 +167,13 @@ interface NamedTypes {
   enums: Set<string>;
   schemas: Set<string>;
   models: Set<string>;
+}
+
+function parseContent(content: string, regex: RegExp) {
+  const result = content.matchAll(regex);
+  const unmatched = content.replaceAll(regex, '').trim();
+  if (unmatched.length > 0) {
+    throw new Error('Unexpected syntax near:\n' + unmatched);
+  }
+  return [...result];
 }

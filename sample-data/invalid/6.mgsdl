@@ -1,0 +1,4 @@
+model User {
+  email: String! @index @unknown
+  name: String
+}

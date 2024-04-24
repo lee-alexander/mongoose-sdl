@@ -151,3 +151,45 @@ exports[`parse example.mgsdl 1`] = `
   },
 }
 `;
+
+exports[`parse invalid cases 1`] = `
+[Error: Unexpected syntax near:
+bah]
+`;
+
+exports[`parse invalid cases 2`] = `
+[Error: Unexpected syntax near:
+bah]
+`;
+
+exports[`parse invalid cases 3`] = `
+[Error: Unexpected syntax near:
+unknown UserStatus {
+  Pending
+  Active
+  Inactive
+}]
+`;
+
+exports[`parse invalid cases 4`] = `
+[Error: Unexpected syntax near:
+enum UserStatus
+  Pending
+  Active
+  Inactive
+}]
+`;
+
+exports[`parse invalid cases 5`] = `
+[Error: Unexpected syntax near:
+//]
+`;
+
+exports[`parse invalid cases 6`] = `[Error: Unknown directives: unknown]`;
+
+exports[`parse invalid cases 7`] = `[Error: Field email has unknown type Unknown]`;
+
+exports[`parse invalid cases 8`] = `
+[Error: Unexpected syntax near:
+name String]
+`;
