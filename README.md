@@ -128,6 +128,12 @@ Directives customize generation behavior on fields:
 
 ## Relationships
 
-When a schema is specified as the type of a field, it will be directly embedded in the parent schema or model. Recursive schema definitions are supported. Cyclical references across schemas are not. Schemas will be emitted into the generated code according to a topological sort of their dependencies.
+When a schema is specified as the type of a field, a reference to the schema instance will be directly embedded in the parent schema or model.
+
+- Recursive schema definitions are supported.
+- Cyclical references across schemas are not supported.
+- "Nested paths" where the schema contents are directly inlined instead of referenced by instance are not supported, due to confusing Mongoose runtime behavior that is difficult to type safely and usefully.
+
+Schemas will be emitted into the generated code according to a topological sort of their dependencies.
 
 When a model is specified as the type of a field, it will be turned into an ObjectId under the hood that has a ref to the model name.
