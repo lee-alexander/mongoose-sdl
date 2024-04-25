@@ -4,7 +4,9 @@ import { assertUnreachable } from '../util';
 export function generateTypes(sdl: DbDefinition): string {
   const enums = Object.entries(sdl.enums).map(([name, data]) => generateEnumType(name, data));
   const models = Object.entries(sdl.models).map(([name, data]) => generateModelType(getModelTypeName(name), data));
-  const schemas = Object.entries(sdl.schemas).map(([name, data]) => generateSchemaType(getSchemaTypeName(name), data));
+  const schemas = Object.entries(sdl.schemas).map(([name, data]) =>
+    generateSchemaType(getSchemaTypeName(name), data, false)
+  );
 
   return [`import { Types, Document } from 'mongoose';`, ...enums, ...models, ...schemas].join('\n\n');
 }
@@ -14,8 +16,10 @@ function generateEnumType(name: string, data: Enum) {
   return `export enum ${name} {\n${enumValues}\n}`;
 }
 
-function generateSchemaType(name: string, data: Schema) {
-  const defaultFields = ['  id: string;', '  createdAt: Date;', '  updatedAt: Date;'].join('\n');
+function generateSchemaType(name: string, data: Schema, includeTimestamps: boolean) {
+  const defaultFields = ['  id: string;']
+    .concat(includeTimestamps ? ['  createdAt: Date;', '  updatedAt: Date;'] : [])
+    .join('\n');
   const customFields = Object.entries(data)
     .map(
       ([name, data]) =>
@@ -29,7 +33,7 @@ function generateSchemaType(name: string, data: Schema) {
 }
 
 function generateModelType(name: string, model: Model) {
-  return generateSchemaType(name, model.schema);
+  return generateSchemaType(name, model.schema, true);
 }
 
 function getTypeName(field: SchemaDataType): string {

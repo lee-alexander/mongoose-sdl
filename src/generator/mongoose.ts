@@ -5,21 +5,23 @@ import { getModelTypeName, getSchemaTypeName } from './types';
 
 export function generateMongoose(sdl: DbDefinition): string {
   const sortedSchemas = sortSchemasTopologically(sdl.schemas);
-  const schemaContent = sortedSchemas.map(({ name, schema }) => generateSchema(name, getSchemaTypeName(name), schema));
+  const schemaContent = sortedSchemas.map(({ name, schema }) =>
+    generateSchema(name, getSchemaTypeName(name), schema, false)
+  );
   const modelContent = Object.entries(sdl.models).map(([name, data]) => generateModel(name, data));
 
   return [`import { Schema, model } from 'mongoose';`, ...schemaContent, ...modelContent].join('\n\n');
 }
 
 function generateModel(name: string, model: Model) {
-  const schemaContent = generateSchema(name, getModelTypeName(name), model.schema);
+  const schemaContent = generateSchema(name, getModelTypeName(name), model.schema, true);
   const modelContent = `export const ${getModelName(name)} = model<${getModelTypeName(
     name
   )}>('${name}', ${getSchemaName(name)});`;
   return `${schemaContent}\n\n${modelContent}`;
 }
 
-function generateSchema(name: string, typeName: string, schema: Schema) {
+function generateSchema(name: string, typeName: string, schema: Schema, includeTimestamps: boolean) {
   const schemaFieldContent = Object.entries(schema)
     .map(([fieldName, data]) =>
       getSchemaRef(data.dataType) === name ? null : `    ${fieldName}: ${getSchemaFieldDefinition(data)},`
@@ -32,10 +34,11 @@ function generateSchema(name: string, typeName: string, schema: Schema) {
     .map(([fieldName, data]) => `${getSchemaName(name)}.add({ ${fieldName}: ${getSchemaFieldDefinition(data)} });`)
     .join('\n');
 
+  const timestampsContent = includeTimestamps ? `,\n{ timestamps: true }` : '';
+
   return `const ${getSchemaName(name)} = new Schema<${typeName}>(
   {\n${schemaFieldContent}
-  },
-  { timestamps: true }\n);${recursivePatchContent ? `\n${recursivePatchContent}` : ''}`;
+  }${timestampsContent}\n);${recursivePatchContent ? `\n${recursivePatchContent}` : ''}`;
 }
 
 function getSchemaFieldDefinition(field: SchemaField): string {

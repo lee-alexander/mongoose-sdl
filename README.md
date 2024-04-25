@@ -68,23 +68,17 @@ export interface ProjectDetailsSchemaDocument extends Document {
 
 import { Schema, model } from 'mongoose';
 
-const ProjectDetailsSchema = new Schema<ProjectDetailsSchemaDocument>(
-  {
-    name: { required: true, type: String },
-    alternateNames: { required: true, type: [{ type: String, required: true }] },
-    number: { type: Number },
-  },
-  { timestamps: true }
-);
+const ProjectDetailsSchema = new Schema<ProjectDetailsSchemaDocument>({
+  name: { required: true, type: String },
+  alternateNames: { required: true, type: [{ type: String, required: true }] },
+  number: { type: Number },
+});
 
-const UserSchema = new Schema<UserDocument>(
-  {
-    email: { required: true, index: true, unique: true, type: String },
-    name: { type: String },
-    status: { required: true, type: String, enum: UserStatus },
-  },
-  { timestamps: true }
-);
+const UserSchema = new Schema<UserDocument>({
+  email: { required: true, index: true, unique: true, type: String },
+  name: { type: String },
+  status: { required: true, type: String, enum: UserStatus },
+});
 
 export const UserModel = model<UserDocument>('User', UserSchema);
 

@@ -30,8 +30,6 @@ export interface ProjectDocument extends Document {
 
 export interface ProjectDetailsSchemaDocument extends Document {
   id: string;
-  createdAt: Date;
-  updatedAt: Date;
   name: string;
   alternateNames: string[];
   number: number | null | undefined;
@@ -48,8 +46,7 @@ const ProjectDetailsSchema = new Schema<ProjectDetailsSchemaDocument>(
     number: { unique: true, type: Number },
     isActive: { required: true, immutable: true, type: Boolean },
     startDate: { type: Date },
-  },
-  { timestamps: true }
+  }
 );
 
 const UserSchema = new Schema<UserDocument>(
@@ -58,7 +55,7 @@ const UserSchema = new Schema<UserDocument>(
     name: { type: String },
     status: { required: true, type: String, enum: UserStatus },
   },
-  { timestamps: true }
+{ timestamps: true }
 );
 
 export const UserModel = model<UserDocument>('User', UserSchema);
@@ -70,7 +67,7 @@ const ProjectSchema = new Schema<ProjectDocument>(
     lastAccessedByUserId: { required: true, type: Map, of: { type: String } },
     detailsByUserId: { immutable: true, type: Map, of: { type: ProjectDetailsSchema, required: true } },
   },
-  { timestamps: true }
+{ timestamps: true }
 );
 
 export const ProjectModel = model<ProjectDocument>('Project', ProjectSchema);"
@@ -89,15 +86,11 @@ export interface ProjectDocument extends Document {
 
 export interface CompanySchemaDocument extends Document {
   id: string;
-  createdAt: Date;
-  updatedAt: Date;
   name: string | null | undefined;
 }
 
 export interface ContractorSchemaDocument extends Document {
   id: string;
-  createdAt: Date;
-  updatedAt: Date;
   name: string;
   company: CompanySchemaDocument | null | undefined;
   parentContractor: ContractorSchemaDocument;
@@ -105,8 +98,6 @@ export interface ContractorSchemaDocument extends Document {
 
 export interface ProjectDetailsSchemaDocument extends Document {
   id: string;
-  createdAt: Date;
-  updatedAt: Date;
   name: string;
   contractor: ContractorSchemaDocument;
 }
@@ -116,16 +107,14 @@ import { Schema, model } from 'mongoose';
 const CompanySchema = new Schema<CompanySchemaDocument>(
   {
     name: { type: String },
-  },
-  { timestamps: true }
+  }
 );
 
 const ContractorSchema = new Schema<ContractorSchemaDocument>(
   {
     name: { required: true, type: String },
     company: { type: CompanySchema },
-  },
-  { timestamps: true }
+  }
 );
 ContractorSchema.add({ parentContractor: { required: true, type: ContractorSchema } });
 
@@ -133,8 +122,7 @@ const ProjectDetailsSchema = new Schema<ProjectDetailsSchemaDocument>(
   {
     name: { required: true, type: String },
     contractor: { required: true, type: ContractorSchema },
-  },
-  { timestamps: true }
+  }
 );
 
 const ProjectSchema = new Schema<ProjectDocument>(
@@ -142,7 +130,7 @@ const ProjectSchema = new Schema<ProjectDocument>(
     name: { required: true, type: String },
     details: { required: true, type: ProjectDetailsSchema },
   },
-  { timestamps: true }
+{ timestamps: true }
 );
 
 export const ProjectModel = model<ProjectDocument>('Project', ProjectSchema);"
