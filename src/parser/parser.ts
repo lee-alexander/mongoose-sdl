@@ -146,6 +146,13 @@ function parseDataType(fieldName: string, fieldType: string, namedTypes: NamedTy
     };
   }
 
+  if (fieldType === 'ObjectId') {
+    return {
+      type: 'ObjectId',
+      refModel: null,
+    };
+  }
+
   if (namedTypes.models.has(fieldType)) {
     return {
       type: 'ObjectId',

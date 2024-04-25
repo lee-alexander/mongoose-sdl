@@ -74,7 +74,7 @@ function getSchemaFieldDataDefinition(data: FlatSchemaDataType): string {
     case 'Enum':
       return `type: String, enum: ${data.refEnum}`;
     case 'ObjectId':
-      return `type: Schema.Types.ObjectId, ref: '${data.refModel}'`;
+      return `type: Schema.Types.ObjectId${data.refModel ? `, ref: '${data.refModel}'` : ``}`;
     case 'Schema':
       return `type: ${getSchemaName(data.refSchema)}`;
     default:

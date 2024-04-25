@@ -40,7 +40,7 @@ export type SchemaDataType =
     }
   | {
       type: 'ObjectId';
-      refModel: string;
+      refModel: string | null;
     }
   | {
       type: 'Schema';

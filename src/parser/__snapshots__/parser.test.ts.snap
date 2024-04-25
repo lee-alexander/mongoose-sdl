@@ -93,6 +93,16 @@ exports[`parse example.mgsdl 1`] = `
           "isRequired": true,
           "isUnique": false,
         },
+        "unknownRef": {
+          "dataType": {
+            "refModel": null,
+            "type": "ObjectId",
+          },
+          "isImmutable": false,
+          "isIndex": false,
+          "isRequired": true,
+          "isUnique": false,
+        },
       },
     },
   },

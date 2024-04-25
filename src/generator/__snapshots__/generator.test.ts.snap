@@ -16,6 +16,7 @@ export interface UserDocument extends Document {
   email: string;
   name: string | null | undefined;
   status: UserStatus;
+  unknownRef: Types.ObjectId;
 }
 
 export interface ProjectDocument extends Document {
@@ -54,6 +55,7 @@ const UserSchema = new Schema<UserDocument>(
     email: { required: true, index: true, unique: true, type: String },
     name: { type: String },
     status: { required: true, type: String, enum: UserStatus },
+    unknownRef: { required: true, type: Schema.Types.ObjectId },
   },
 { timestamps: true }
 );

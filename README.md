@@ -117,8 +117,11 @@ There are a few built-in data types for fields. `!` can be appended to indicate 
 - `Boolean`
 - `String`
 - `Date`
-- Arrays use GQL syntax - e.g. `[Number]` or `[Number!]`. Elements can be any built-in type or custom model, schema, enum
-- Maps use a custom syntax - e.g. `Map<Number>` or `Map<Number!>`. Elements can be any built-in type or custom model, schema, or enum
+- Schemas can be referenced directly by their `schema` name. A reference to the schema instance will be directly embedded in the parent schema or model. See below section on Schemas for more detais.
+- Models can be referenced directly by their `model` name. This will create an ObjectId with a ref to the model name.
+- `ObjectId` can be used directly when the type of the referenced model is unknown
+- Arrays use GQL syntax - e.g. `[T]` or `[T!]` where `T` is any flat built-in type, schema, or model. Elements can be any built-in type or custom model, schema, enum
+- Maps use a custom syntax - e.g. `Map<T>` or `Map<T!>` where `T` is any flat built-in type, schema, or model. Elements can be any built-in type or custom model, schema, or enum
 
 Directives customize generation behavior on fields:
 
@@ -126,14 +129,10 @@ Directives customize generation behavior on fields:
 - `@unique`
 - `@immutable`
 
-## Relationships
+## Schemas
 
-When a schema is specified as the type of a field, a reference to the schema instance will be directly embedded in the parent schema or model.
-
-- Recursive schema definitions are supported.
+- Recursive schema definitions are supported. The schema is emitted without recursive fields first, then the recursive fields are patched on one at a time via schema.add()
 - Cyclical references across schemas are not supported.
 - "Nested paths" where the schema contents are directly inlined instead of referenced by instance are not supported, due to confusing Mongoose runtime behavior that is difficult to type safely and usefully.
 
 Schemas will be emitted into the generated code according to a topological sort of their dependencies.
-
-When a model is specified as the type of a field, it will be turned into an ObjectId under the hood that has a ref to the model name.

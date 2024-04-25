@@ -3,7 +3,7 @@
   "version": "0.0.4",
   "description": "Codegen util to generate TS definitions and Mongoose schemas from a custom SDL format",
   "scripts": {
-    "test": "jest",
+    "test": "jest ./src",
     "build": "tsc"
   },
   "bin": "./cli.mjs",
