@@ -44,10 +44,10 @@ function generateFactoryConfigType(sdl: DbDefinition) {
                 `      }`,
               ]
             : []),
-          `    }`,
+          `    },`,
         ]),
         `  }`,
-      ].join(',\n')
+      ].join('\n')
     )
     .join(',\n');
 

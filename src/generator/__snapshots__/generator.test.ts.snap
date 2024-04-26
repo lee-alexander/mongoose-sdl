@@ -45,48 +45,48 @@ import { Schema, model } from 'mongoose';
 
 export interface MongooseFactoryConfig {
 schemas: {
-  User: {,
-    email?: {,
+  User: {
+    email?: {
     },
-    name?: {,
+    name?: {
     },
-    status?: {,
+    status?: {
     },
-    unknownRef?: {,
+    unknownRef?: {
     },
-    fullName: {,
-      virtual: {,
-        get?: (doc: UserSchema) => string,
-        set?: (doc: UserSchema, value: string) => void,
-      },
+    fullName: {
+      virtual: {
+        get?: (doc: UserSchema) => string
+        set?: (doc: UserSchema, value: string) => void
+      }
     },
-    computedFields: {,
-      virtual: {,
-        get?: (doc: UserSchema) => UserDetailsInterface,
-        set?: (doc: UserSchema, value: UserDetailsInterface) => void,
-      },
-    },
-  },
-  Project?: {,
-    creator?: {,
-    },
-    details?: {,
-    },
-    lastAccessedByUserId?: {,
-    },
-    detailsByUserId?: {,
+    computedFields: {
+      virtual: {
+        get?: (doc: UserSchema) => UserDetailsInterface
+        set?: (doc: UserSchema, value: UserDetailsInterface) => void
+      }
     },
   },
-  ProjectDetails?: {,
-    name?: {,
+  Project?: {
+    creator?: {
     },
-    alternateNames?: {,
+    details?: {
     },
-    number?: {,
+    lastAccessedByUserId?: {
     },
-    isActive?: {,
+    detailsByUserId?: {
     },
-    startDate?: {,
+  },
+  ProjectDetails?: {
+    name?: {
+    },
+    alternateNames?: {
+    },
+    number?: {
+    },
+    isActive?: {
+    },
+    startDate?: {
     },
   }
 }
@@ -181,28 +181,28 @@ import { Schema, model } from 'mongoose';
 
 export interface MongooseFactoryConfig {
 schemas: {
-  Project?: {,
-    name?: {,
+  Project?: {
+    name?: {
     },
-    details?: {,
-    },
-  },
-  Company?: {,
-    name?: {,
+    details?: {
     },
   },
-  Contractor?: {,
-    name?: {,
-    },
-    company?: {,
-    },
-    parentContractor?: {,
+  Company?: {
+    name?: {
     },
   },
-  ProjectDetails?: {,
-    name?: {,
+  Contractor?: {
+    name?: {
     },
-    contractor?: {,
+    company?: {
+    },
+    parentContractor?: {
+    },
+  },
+  ProjectDetails?: {
+    name?: {
+    },
+    contractor?: {
     },
   }
 }
