@@ -32,6 +32,7 @@ export interface SchemaField {
   isUnique: boolean;
   isImmutable: boolean;
   isVirtual: boolean;
+  isValidatable: boolean;
 }
 
 export type SchemaDataType =

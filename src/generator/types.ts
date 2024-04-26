@@ -1,4 +1,4 @@
-import { DbDefinition, Enum, Schema, SchemaDataType, Model, CodegenConfig } from '../types';
+import { DbDefinition, Enum, Schema, SchemaDataType, Model, CodegenConfig, SchemaField } from '../types';
 import { assertUnreachable, groupItemsBy } from '../util';
 
 export function generateTypes(sdl: DbDefinition, config: CodegenConfig): string {
@@ -40,12 +40,7 @@ function generateSchemaType(name: string, data: Schema, includeTimestamps: boole
     .concat(includeTimestamps ? ['createdAt: Date;', 'updatedAt: Date;'] : [])
     .join('\n');
   const customFields = Object.entries(data)
-    .map(
-      ([name, data]) =>
-        `${data.isImmutable ? 'readonly ' : ''}${name}: ${getTypeName(data.dataType)}${
-          data.isRequired ? '' : ' | null | undefined'
-        };`
-    )
+    .map(([name, data]) => `${data.isImmutable ? 'readonly ' : ''}${name}: ${getTypeNameWithNullability(data)};`)
     .join('\n');
 
   return `export interface ${name} extends Document {\n${defaultFields}\n${customFields}\n}`;
@@ -53,6 +48,10 @@ function generateSchemaType(name: string, data: Schema, includeTimestamps: boole
 
 function generateModelType(name: string, model: Model) {
   return generateSchemaType(name, model.schema, true);
+}
+
+export function getTypeNameWithNullability(field: SchemaField) {
+  return `${getTypeName(field.dataType)}${field.isRequired ? '' : ' | null | undefined'}`;
 }
 
 export function getTypeName(field: SchemaDataType): string {

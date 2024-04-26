@@ -26,6 +26,7 @@ exports[`parse example.mgsdl 1`] = `
           "isIndex": true,
           "isRequired": true,
           "isUnique": false,
+          "isValidatable": false,
           "isVirtual": false,
         },
         "details": {
@@ -37,6 +38,7 @@ exports[`parse example.mgsdl 1`] = `
           "isIndex": false,
           "isRequired": true,
           "isUnique": false,
+          "isValidatable": false,
           "isVirtual": false,
         },
         "detailsByUserId": {
@@ -52,6 +54,7 @@ exports[`parse example.mgsdl 1`] = `
           "isIndex": false,
           "isRequired": false,
           "isUnique": false,
+          "isValidatable": false,
           "isVirtual": false,
         },
         "lastAccessedByUserId": {
@@ -66,6 +69,7 @@ exports[`parse example.mgsdl 1`] = `
           "isIndex": false,
           "isRequired": true,
           "isUnique": false,
+          "isValidatable": false,
           "isVirtual": false,
         },
       },
@@ -81,6 +85,7 @@ exports[`parse example.mgsdl 1`] = `
           "isIndex": false,
           "isRequired": true,
           "isUnique": false,
+          "isValidatable": false,
           "isVirtual": true,
         },
         "email": {
@@ -91,6 +96,7 @@ exports[`parse example.mgsdl 1`] = `
           "isIndex": true,
           "isRequired": true,
           "isUnique": true,
+          "isValidatable": false,
           "isVirtual": false,
         },
         "fullName": {
@@ -101,6 +107,7 @@ exports[`parse example.mgsdl 1`] = `
           "isIndex": false,
           "isRequired": true,
           "isUnique": false,
+          "isValidatable": false,
           "isVirtual": true,
         },
         "name": {
@@ -111,6 +118,7 @@ exports[`parse example.mgsdl 1`] = `
           "isIndex": false,
           "isRequired": false,
           "isUnique": false,
+          "isValidatable": false,
           "isVirtual": false,
         },
         "status": {
@@ -122,6 +130,7 @@ exports[`parse example.mgsdl 1`] = `
           "isIndex": false,
           "isRequired": true,
           "isUnique": false,
+          "isValidatable": true,
           "isVirtual": false,
         },
         "unknownRef": {
@@ -133,6 +142,7 @@ exports[`parse example.mgsdl 1`] = `
           "isIndex": false,
           "isRequired": true,
           "isUnique": false,
+          "isValidatable": false,
           "isVirtual": false,
         },
       },
@@ -152,6 +162,7 @@ exports[`parse example.mgsdl 1`] = `
         "isIndex": false,
         "isRequired": true,
         "isUnique": false,
+        "isValidatable": false,
         "isVirtual": false,
       },
       "isActive": {
@@ -162,6 +173,7 @@ exports[`parse example.mgsdl 1`] = `
         "isIndex": false,
         "isRequired": true,
         "isUnique": false,
+        "isValidatable": false,
         "isVirtual": false,
       },
       "name": {
@@ -172,6 +184,7 @@ exports[`parse example.mgsdl 1`] = `
         "isIndex": false,
         "isRequired": true,
         "isUnique": false,
+        "isValidatable": false,
         "isVirtual": false,
       },
       "number": {
@@ -182,6 +195,7 @@ exports[`parse example.mgsdl 1`] = `
         "isIndex": false,
         "isRequired": false,
         "isUnique": true,
+        "isValidatable": false,
         "isVirtual": false,
       },
       "startDate": {
@@ -192,6 +206,7 @@ exports[`parse example.mgsdl 1`] = `
         "isIndex": false,
         "isRequired": false,
         "isUnique": false,
+        "isValidatable": true,
         "isVirtual": false,
       },
     },

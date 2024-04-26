@@ -9,7 +9,7 @@ enum UserStatus {
 model User {
   email: String! @index @unique
   name: String
-  status: UserStatus!
+  status: UserStatus! @validate
   unknownRef: ObjectId!
   fullName: String! @virtual
   computedFields: UserDetailsInterface! @virtual
@@ -27,5 +27,5 @@ schema ProjectDetails {
   alternateNames: [String!]!
   number: Number @unique
   isActive: Boolean! @immutable
-  startDate: Date
+  startDate: Date @validate
 }

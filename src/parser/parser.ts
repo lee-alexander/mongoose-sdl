@@ -101,7 +101,7 @@ function parseSchemaContents(contents: string, namedTypes: NamedTypes): Schema {
 
   const invalidDirectives = parsedFields
     .flatMap((f) => f.directives)
-    .filter((d) => d !== 'index' && d !== 'unique' && d !== 'immutable' && d !== 'virtual');
+    .filter((d) => d !== 'index' && d !== 'unique' && d !== 'immutable' && d !== 'virtual' && d !== 'validate');
   if (invalidDirectives.length > 0) {
     throw new Error('Unknown directives: ' + invalidDirectives);
   }
@@ -128,6 +128,7 @@ function parseSchemaContents(contents: string, namedTypes: NamedTypes): Schema {
       isUnique: f.directives.includes('unique'),
       isImmutable: f.directives.includes('immutable'),
       isVirtual: f.directives.includes('virtual'),
+      isValidatable: f.directives.includes('validate'),
     })
   );
 }

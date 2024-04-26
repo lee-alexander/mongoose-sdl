@@ -44,47 +44,33 @@ export interface ProjectDetailsSchemaDocument extends Document {
 export interface MongooseFactoryConfig {
   schemas: {
     User: {
-      email?: {
-      },
-      name?: {
-      },
-      status?: {
-      },
-      unknownRef?: {
+      status: {
+        validate: {
+          validator: (val: UserStatus) => any,
+          message?: string,
+        },
       },
       fullName: {
         virtual: {
           get?: (doc: UserSchema) => string
           set?: (doc: UserSchema, value: string) => void
-        }
+        },
       },
       computedFields: {
         virtual: {
           get?: (doc: UserSchema) => UserDetailsInterface
           set?: (doc: UserSchema, value: UserDetailsInterface) => void
-        }
+        },
       },
     },
     Project?: {
-      creator?: {
-      },
-      details?: {
-      },
-      lastAccessedByUserId?: {
-      },
-      detailsByUserId?: {
-      },
     },
     ProjectDetails?: {
-      name?: {
-      },
-      alternateNames?: {
-      },
-      number?: {
-      },
-      isActive?: {
-      },
-      startDate?: {
+      startDate: {
+        validate: {
+          validator: (val: Date | null | undefined) => any,
+          message?: string,
+        },
       },
     }
   }
@@ -98,7 +84,7 @@ export function initializeMongoose(config: MongooseFactoryConfig) {
       alternateNames: { required: true, type: [{ type: String, required: true }] },
       number: { unique: true, type: Number },
       isActive: { required: true, immutable: true, type: Boolean },
-      startDate: { type: Date },
+      startDate: { type: Date, validate: config.schemas.ProjectDetails.startDate.validate },
     }
   );
   
@@ -106,22 +92,22 @@ export function initializeMongoose(config: MongooseFactoryConfig) {
     {
       email: { required: true, index: true, unique: true, type: String },
       name: { type: String },
-      status: { required: true, type: String, enum: UserStatus },
+      status: { required: true, type: String, enum: UserStatus, validate: config.schemas.User.status.validate },
       unknownRef: { required: true, type: Schema.Types.ObjectId },
     },
     { timestamps: true }
   );
-  if (config.schemas.UserSchema.fullName.virtual.get) {
-    UserSchema.virtual('fullName').get((_, __, doc) => config.schemas.UserSchema.virtual.get(doc))
+  if (config.schemas.User.fullName.virtual.get) {
+    UserSchema.virtual('fullName').get((_, __, doc) => config.schemas.User.virtual.get(doc))
   }
-  if (config.schemas.UserSchema.fullName.virtual.set) {
-    UserSchema.virtual('fullName').set((value, _, doc) => { config.schemas.UserSchema.virtual.set(doc, value); })
+  if (config.schemas.User.fullName.virtual.set) {
+    UserSchema.virtual('fullName').set((value, _, doc) => { config.schemas.User.virtual.set(doc, value); })
   }
-  if (config.schemas.UserSchema.computedFields.virtual.get) {
-    UserSchema.virtual('computedFields').get((_, __, doc) => config.schemas.UserSchema.virtual.get(doc))
+  if (config.schemas.User.computedFields.virtual.get) {
+    UserSchema.virtual('computedFields').get((_, __, doc) => config.schemas.User.virtual.get(doc))
   }
-  if (config.schemas.UserSchema.computedFields.virtual.set) {
-    UserSchema.virtual('computedFields').set((value, _, doc) => { config.schemas.UserSchema.virtual.set(doc, value); })
+  if (config.schemas.User.computedFields.virtual.set) {
+    UserSchema.virtual('computedFields').set((value, _, doc) => { config.schemas.User.virtual.set(doc, value); })
   }
   
   const UserModel = model<UserDocument>('User', UserSchema);
@@ -178,28 +164,12 @@ export interface ProjectDetailsSchemaDocument extends Document {
 export interface MongooseFactoryConfig {
   schemas: {
     Project?: {
-      name?: {
-      },
-      details?: {
-      },
     },
     Company?: {
-      name?: {
-      },
     },
     Contractor?: {
-      name?: {
-      },
-      company?: {
-      },
-      parentContractor?: {
-      },
     },
     ProjectDetails?: {
-      name?: {
-      },
-      contractor?: {
-      },
     }
   }
 }

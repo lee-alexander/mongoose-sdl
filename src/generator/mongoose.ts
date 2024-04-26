@@ -1,7 +1,7 @@
 import { sortSchemasTopologically } from './util/topological-sort';
 import { DbDefinition, Schema, SchemaField, FlatSchemaDataType, Model, SchemaDataType } from '../types';
 import { assertUnreachable, notNullOrUndefined } from '../util';
-import { getModelTypeName, getSchemaTypeName, getTypeName } from './types';
+import { getModelTypeName, getSchemaTypeName, getTypeNameWithNullability } from './types';
 
 export function generateMongoose(sdl: DbDefinition): string {
   const sortedSchemas = sortSchemasTopologically(sdl.schemas);
@@ -33,18 +33,30 @@ function generateFactoryConfigType(sdl: DbDefinition) {
     .map(({ name, schema }) =>
       [
         `${name}${Object.values(schema).some((data) => data.isVirtual) ? '' : '?'}: {`,
-        ...Object.entries(schema).flatMap(([fieldName, data]) => [
-          `${fieldName}${data.isVirtual ? '' : '?'}: {`,
-          ...(data.isVirtual
+        ...Object.entries(schema).flatMap(([fieldName, data]) =>
+          data.isVirtual || data.isValidatable
             ? [
-                `virtual: {`,
-                `get?: (doc: ${getSchemaName(name)}) => ${getTypeName(data.dataType)}`,
-                `set?: (doc: ${getSchemaName(name)}, value: ${getTypeName(data.dataType)}) => void`,
-                `}`,
+                `${fieldName}${data.isVirtual || data.isValidatable ? '' : '?'}: {`,
+                ...(data.isValidatable
+                  ? [
+                      `validate: {`,
+                      `validator: (val: ${getTypeNameWithNullability(data)}) => any,`,
+                      `message?: string,`,
+                      `},`,
+                    ]
+                  : []),
+                ...(data.isVirtual
+                  ? [
+                      `virtual: {`,
+                      `get?: (doc: ${getSchemaName(name)}) => ${getTypeNameWithNullability(data)}`,
+                      `set?: (doc: ${getSchemaName(name)}, value: ${getTypeNameWithNullability(data)}) => void`,
+                      `},`,
+                    ]
+                  : []),
+                `},`,
               ]
-            : []),
-          `},`,
-        ]),
+            : []
+        ),
         `}`,
       ].join('\n')
     )
@@ -70,19 +82,24 @@ function generateSchema(name: string, typeName: string, schema: Schema, includeT
   const recursiveFields = fields.filter((f) => !f.data.isVirtual && getSchemaRef(f.data.dataType) === name);
 
   const schemaFieldContent =
-    regularFields.map(({ fieldName, data }) => `${fieldName}: ${getSchemaFieldDefinition(data)},`).join('\n') || null;
+    regularFields
+      .map(({ fieldName, data }) => `${fieldName}: ${getSchemaFieldDefinition(name, fieldName, data)},`)
+      .join('\n') || null;
   const recursiveFieldContent =
     recursiveFields
-      .map(({ fieldName, data }) => `${schemaName}.add({ ${fieldName}: ${getSchemaFieldDefinition(data)} });`)
+      .map(
+        ({ fieldName, data }) =>
+          `${schemaName}.add({ ${fieldName}: ${getSchemaFieldDefinition(name, fieldName, data)} });`
+      )
       .join('\n') || null;
   const virtualFieldContent =
     virtualFields
       .flatMap(({ fieldName }) => [
-        `if (config.schemas.${schemaName}.${fieldName}.virtual.get) {`,
-        `${schemaName}.virtual('${fieldName}').get((_, __, doc) => config.schemas.${schemaName}.virtual.get(doc))`,
+        `if (config.schemas.${name}.${fieldName}.virtual.get) {`,
+        `${schemaName}.virtual('${fieldName}').get((_, __, doc) => config.schemas.${name}.virtual.get(doc))`,
         `}`,
-        `if (config.schemas.${schemaName}.${fieldName}.virtual.set) {`,
-        `${schemaName}.virtual('${fieldName}').set((value, _, doc) => { config.schemas.${schemaName}.virtual.set(doc, value); })`,
+        `if (config.schemas.${name}.${fieldName}.virtual.set) {`,
+        `${schemaName}.virtual('${fieldName}').set((value, _, doc) => { config.schemas.${name}.virtual.set(doc, value); })`,
         `}`,
       ])
       .join('\n') || null;
@@ -101,7 +118,7 @@ function generateSchema(name: string, typeName: string, schema: Schema, includeT
     .join('\n');
 }
 
-function getSchemaFieldDefinition(field: SchemaField): string {
+function getSchemaFieldDefinition(schemaName: string, fieldName: string, field: SchemaField): string {
   if (field.isVirtual) {
     throw new Error('Cannot create schema field definition for virtual field');
   }
@@ -125,7 +142,13 @@ function getSchemaFieldDefinition(field: SchemaField): string {
     customDefinition = getSchemaFieldDataDefinition(field.dataType);
   }
 
-  return `{ ${[...baseDefinition, customDefinition].filter(notNullOrUndefined).join(', ')} }`;
+  return `{ ${[
+    ...baseDefinition,
+    customDefinition,
+    field.isValidatable ? `validate: config.schemas.${schemaName}.${fieldName}.validate` : null,
+  ]
+    .filter(notNullOrUndefined)
+    .join(', ')} }`;
 }
 
 function getSchemaFieldDataDefinition(data: FlatSchemaDataType): string {
