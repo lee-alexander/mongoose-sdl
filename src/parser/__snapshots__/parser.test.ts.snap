@@ -19,7 +19,9 @@ exports[`parse example.mgsdl 1`] = `
       "schema": {
         "creator": {
           "dataType": {
-            "refModel": "User",
+            "refModels": [
+              "User",
+            ],
             "type": "ObjectId",
           },
           "isImmutable": false,
@@ -135,7 +137,7 @@ exports[`parse example.mgsdl 1`] = `
         },
         "unknownRef": {
           "dataType": {
-            "refModel": null,
+            "refModels": [],
             "type": "ObjectId",
           },
           "isImmutable": false,
@@ -157,6 +159,21 @@ exports[`parse example.mgsdl 1`] = `
             "type": "String",
           },
           "type": "Array",
+        },
+        "isImmutable": false,
+        "isIndex": false,
+        "isRequired": true,
+        "isUnique": false,
+        "isValidatable": false,
+        "isVirtual": false,
+      },
+      "dynamicRef": {
+        "dataType": {
+          "refModels": [
+            "User",
+            "Project",
+          ],
+          "type": "ObjectId",
         },
         "isImmutable": false,
         "isIndex": false,
@@ -209,6 +226,14 @@ exports[`parse example.mgsdl 1`] = `
         "isValidatable": true,
         "isVirtual": false,
       },
+    },
+  },
+  "unions": {
+    "UserOrProject": {
+      "refModels": [
+        "User",
+        "Project",
+      ],
     },
   },
 }

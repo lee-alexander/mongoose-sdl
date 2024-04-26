@@ -28,4 +28,7 @@ schema ProjectDetails {
   number: Number @unique
   isActive: Boolean! @immutable
   startDate: Date @validate
+  dynamicRef: UserOrProject!
 }
+
+union UserOrProject = User | Project

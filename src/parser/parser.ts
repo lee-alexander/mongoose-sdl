@@ -1,24 +1,30 @@
 import { promises as fs } from 'fs';
 import { groupItemsBy, toDictionary, uniqueValues, unwrap } from '../util';
-import { Enum, Schema, Model, DbDefinition, FlatSchemaDataType } from '../types';
+import { Enum, Schema, Model, DbDefinition, FlatSchemaDataType, Union, Unions } from '../types';
 
 // Break overall document down into key sections - enums, models, schemas
-const TopLevelRegex = /(?:(enum|model|schema) ([^{]*) {([^}]*)})|(?:external (\w*))/g;
+const TopLevelRegex = /(?:(enum|model|schema) ([^{]*) {([^}]*)})|(?:external (\w*))|(?:union (\w*) = ([\w |]*))/g;
 
 export async function parseDbDefinitionFile(path: string): Promise<DbDefinition> {
   const fileBuffer = await fs.readFile(path);
   const contents = fileBuffer.toString();
   const parsedContent = parseContent(contents, TopLevelRegex);
 
-  const topLevelNames = parsedContent.map(([, , name, _, externalTypeName]) => name || externalTypeName);
+  const topLevelNames = parsedContent.map(
+    ([, , name, _, externalTypeName, unionName]) => name || externalTypeName || unionName
+  );
   if (topLevelNames.length !== uniqueValues(topLevelNames).length) {
-    throw new Error('Duplicate schema/model/enum/external name detected');
+    throw new Error('Duplicate schema/model/enum/external/union name detected');
   }
 
   const contentByType = groupItemsBy(
     parsedContent,
-    ([, type, , , externalTypeName]) => (externalTypeName ? 'external' : (type as 'enum' | 'model' | 'schema')),
-    ([, , name, contents, externalTypeName]) => ({ name: name || externalTypeName, contents: contents || '' })
+    ([, type, , , externalTypeName, unionName]) =>
+      externalTypeName ? 'external' : unionName ? 'union' : (type as 'enum' | 'model' | 'schema'),
+    ([, , name, contents, externalTypeName, unionName, unionContents]) => ({
+      name: name || externalTypeName || unionName,
+      contents: contents || unionContents || '',
+    })
   );
 
   const namedTypes: NamedTypes = {
@@ -26,7 +32,14 @@ export async function parseDbDefinitionFile(path: string): Promise<DbDefinition>
     models: new Set((contentByType['model'] ?? []).map((d) => d.name)),
     schemas: new Set((contentByType['schema'] ?? []).map((d) => d.name)),
     externals: new Set((contentByType['external'] ?? []).map((d) => d.name)),
+    unions: new Set((contentByType['union'] ?? []).map((d) => d.name)),
   };
+
+  const unions = toDictionary(
+    contentByType['union'] ?? [],
+    ({ name }) => name,
+    ({ name, contents }) => parseUnionContents(name, contents, namedTypes)
+  );
 
   const enums = toDictionary(
     contentByType['enum'] ?? [],
@@ -37,18 +50,18 @@ export async function parseDbDefinitionFile(path: string): Promise<DbDefinition>
   const schemas = toDictionary(
     contentByType['schema'] ?? [],
     ({ name }) => name,
-    ({ contents }) => parseSchemaContents(contents, namedTypes)
+    ({ contents }) => parseSchemaContents(contents, namedTypes, unions)
   );
 
   const models = toDictionary(
     contentByType['model'] ?? [],
     ({ name }) => name,
-    ({ contents }) => parseModelContents(contents, namedTypes)
+    ({ contents }) => parseModelContents(contents, namedTypes, unions)
   );
 
   const externals = (contentByType['external'] ?? []).map((c) => c.name);
 
-  return { enums, schemas, models, externals };
+  return { enums, schemas, models, unions, externals };
 }
 
 const EnumRegex = /(\w+)/g;
@@ -58,6 +71,15 @@ function parseEnumContents(contents: string): Enum {
   return {
     values: values.map(([value]) => value),
   };
+}
+
+function parseUnionContents(name: string, contents: string, namedTypes: NamedTypes): Union {
+  const refModels = contents.split('|').map((m) => m.trim());
+  const unknownModels = refModels.filter((model) => !namedTypes.models.has(model));
+  if (unknownModels.length > 0) {
+    throw new Error(`Unknown model names in union ${name}: ${unknownModels.join(', ')}`);
+  }
+  return { refModels };
 }
 
 // Break down "key: type @directive1 @directive2" lines into
@@ -74,7 +96,7 @@ const KeyValueDirectiveRegex = /(\w+): (?:\[(\w+)(!?)\]|Map<(\w+)(!?)>|(\w+))(!?
 // Break down @directive1 @directive2 into (1) directive1 (2) directive2
 const DirectiveRegex = /@(\w+)/g;
 
-function parseSchemaContents(contents: string, namedTypes: NamedTypes): Schema {
+function parseSchemaContents(contents: string, namedTypes: NamedTypes, unions: Unions): Schema {
   const parsedContent = parseContent(contents, KeyValueDirectiveRegex);
   const parsedFields = parsedContent.map(
     ([
@@ -113,16 +135,16 @@ function parseSchemaContents(contents: string, namedTypes: NamedTypes): Schema {
       dataType: f.isArray
         ? {
             type: 'Array' as const,
-            elementType: parseDataType(f.fieldName, f.fieldType, namedTypes),
+            elementType: parseDataType(f.fieldName, f.fieldType, namedTypes, unions),
             elementRequired: f.isArrayElementRequired,
           }
         : f.isMap
         ? {
             type: 'Map' as const,
-            elementType: parseDataType(f.fieldName, f.fieldType, namedTypes),
+            elementType: parseDataType(f.fieldName, f.fieldType, namedTypes, unions),
             elementRequired: f.isMapElementRequired,
           }
-        : parseDataType(f.fieldName, f.fieldType, namedTypes),
+        : parseDataType(f.fieldName, f.fieldType, namedTypes, unions),
       isRequired: f.isRequired,
       isIndex: f.directives.includes('index'),
       isUnique: f.directives.includes('unique'),
@@ -133,13 +155,18 @@ function parseSchemaContents(contents: string, namedTypes: NamedTypes): Schema {
   );
 }
 
-function parseModelContents(contents: string, namedTypes: NamedTypes): Model {
+function parseModelContents(contents: string, namedTypes: NamedTypes, unions: Unions): Model {
   return {
-    schema: parseSchemaContents(contents, namedTypes),
+    schema: parseSchemaContents(contents, namedTypes, unions),
   };
 }
 
-function parseDataType(fieldName: string, fieldType: string, namedTypes: NamedTypes): FlatSchemaDataType {
+function parseDataType(
+  fieldName: string,
+  fieldType: string,
+  namedTypes: NamedTypes,
+  unions: Unions
+): FlatSchemaDataType {
   if (fieldType === 'String' || fieldType === 'Boolean' || fieldType === 'Number' || fieldType === 'Date') {
     return { type: fieldType };
   }
@@ -154,7 +181,7 @@ function parseDataType(fieldName: string, fieldType: string, namedTypes: NamedTy
   if (fieldType === 'ObjectId') {
     return {
       type: 'ObjectId',
-      refModel: null,
+      refModels: [],
     };
   }
 
@@ -168,7 +195,14 @@ function parseDataType(fieldName: string, fieldType: string, namedTypes: NamedTy
   if (namedTypes.models.has(fieldType)) {
     return {
       type: 'ObjectId',
-      refModel: fieldType,
+      refModels: [fieldType],
+    };
+  }
+
+  if (unions[fieldType]) {
+    return {
+      type: 'ObjectId',
+      refModels: unions[fieldType].refModels,
     };
   }
 
@@ -187,6 +221,7 @@ interface NamedTypes {
   schemas: Set<string>;
   models: Set<string>;
   externals: Set<string>;
+  unions: Set<string>;
 }
 
 function parseContent(content: string, regex: RegExp) {

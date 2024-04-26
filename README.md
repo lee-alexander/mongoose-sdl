@@ -98,18 +98,20 @@ By installing this package and adding a script to your project's package.json
 ```json
 {
   "scripts": {
-    "generate-mongoose-schemas": "mongoose-sdl -input your-file.mgsdl -output models.ts"
+    "generate-mongoose-schemas": "mongoose-sdl --config mgsdl.json"
   }
 }
 ```
 
 ## Data modeling primitives
 
-There are three top-level keywords:
+There are a few top-level keywords:
 
 - `model` - a Mongoose model plus schema definition
-- `schema`- a Mongoose schema that can be embedded into another schema or a model
+- `schema`- a standalone Mongoose schema that can be embedded into another schema or a model
 - `enum` - a TS enum
+- `union` - a union of several models for the purpose of supporting dynamic refs to varying kinds of models
+- `external` - link to a custom type in your own code so you can reference it in a virtual field definition in the SDL. Requires specifying the import path in the config file.
 
 There are a few built-in data types for fields. `!` can be appended to indicate required / non-nullable.
 
@@ -117,22 +119,33 @@ There are a few built-in data types for fields. `!` can be appended to indicate 
 - `Boolean`
 - `String`
 - `Date`
-- Schemas can be referenced directly by their `schema` name. A reference to the schema instance will be directly embedded in the parent schema or model. See below section on Schemas for more detais.
-- Models can be referenced directly by their `model` name. This will create an ObjectId with a ref to the model name.
-- `ObjectId` can be used directly when the type of the referenced model is unknown
-- Arrays use GQL syntax - e.g. `[T]` or `[T!]` where `T` is any flat built-in type, schema, or model. Elements can be any built-in type or custom model, schema, enum
-- Maps use a custom syntax - e.g. `Map<T>` or `Map<T!>` where `T` is any flat built-in type, schema, or model. Elements can be any built-in type or custom model, schema, or enum
+- Arrays use GQL syntax - e.g. `[T]` or `[T!]` where `T` is any built-in type or custom type (no nesting arrays/maps)
+- Maps use a custom syntax - e.g. `Map<T>` or `Map<T!>` where `T` is any built-in type or custom type (no nesting arrays/maps)
 
-Directives customize generation behavior on fields:
+## Models
 
-- `@index`
-- `@unique`
-- `@immutable`
+Models can be referenced directly by their `model` name. This will create an `ObjectId` with a hardcoded ref to the model name.
+
+If your field can point to multiple kinds of models dynamically, create a `union` of those models and reference that in your field definition. This will create an `ObjectId` and require you specify a custom ref function when calling the auto-generated initializer function.
+
+`ObjectId` can be used directly when the type of the referenced model is unknown.
 
 ## Schemas
+
+Schemas can be referenced directly by their `schema` name. A reference to the schema instance will be directly embedded in the parent schema or model. See below section on Schemas for more detais.
 
 - Recursive schema definitions are supported. The schema is emitted without recursive fields first, then the recursive fields are patched on one at a time via schema.add()
 - Cyclical references across schemas are not supported.
 - "Nested paths" where the schema contents are directly inlined instead of referenced by instance are not supported, due to confusing Mongoose runtime behavior that is difficult to type safely and usefully.
 
 Schemas will be emitted into the generated code according to a topological sort of their dependencies.
+
+## Directives
+
+Directives customize generation behavior on fields:
+
+- `@index` - Pass-thru to Mongoose schema config
+- `@unique` - Pass-thru to Mongoose schema config
+- `@immutable` - Pass-thru to Mongoose schema config
+- `@virtual` - Indicates the field will be virtual. Allows for using
+- `@validate`

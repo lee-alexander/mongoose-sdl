@@ -32,11 +32,17 @@ function generateFactoryConfigType(sdl: DbDefinition) {
     .concat(Object.entries(sdl.schemas).map(([name, schema]) => ({ name, schema })))
     .map(({ name, schema }) =>
       [
-        `${name}${Object.values(schema).some((data) => data.isVirtual) ? '' : '?'}: {`,
+        `${name}${
+          Object.values(schema).some(
+            (data) => data.isVirtual || data.isValidatable || getModelRefs(data.dataType).length > 1
+          )
+            ? ''
+            : '?'
+        }: {`,
         ...Object.entries(schema).flatMap(([fieldName, data]) =>
-          data.isVirtual || data.isValidatable
+          data.isVirtual || data.isValidatable || getModelRefs(data.dataType).length > 1
             ? [
-                `${fieldName}${data.isVirtual || data.isValidatable ? '' : '?'}: {`,
+                `${fieldName}: {`,
                 ...(data.isValidatable
                   ? [
                       `validate: {`,
@@ -53,6 +59,7 @@ function generateFactoryConfigType(sdl: DbDefinition) {
                       `},`,
                     ]
                   : []),
+                ...(getModelRefs(data.dataType).length > 1 ? [`ref: (doc: ${getSchemaName(name)}) => string,`] : []),
                 `},`,
               ]
             : []
@@ -132,14 +139,14 @@ function getSchemaFieldDefinition(schemaName: string, fieldName: string, field: 
 
   let customDefinition: string;
   if (field.dataType.type === 'Array' || field.dataType.type === 'Map') {
-    const childType = getSchemaFieldDataDefinition(field.dataType.elementType);
+    const childType = getSchemaFieldDataDefinition(schemaName, fieldName, field.dataType.elementType);
     const childFields = [childType, field.dataType.elementRequired ? 'required: true' : null]
       .filter(notNullOrUndefined)
       .join(', ');
     customDefinition =
       field.dataType.type === 'Array' ? `type: [{ ${childFields} }]` : `type: Map, of: { ${childFields} }`;
   } else {
-    customDefinition = getSchemaFieldDataDefinition(field.dataType);
+    customDefinition = getSchemaFieldDataDefinition(schemaName, fieldName, field.dataType);
   }
 
   return `{ ${[
@@ -151,7 +158,7 @@ function getSchemaFieldDefinition(schemaName: string, fieldName: string, field: 
     .join(', ')} }`;
 }
 
-function getSchemaFieldDataDefinition(data: FlatSchemaDataType): string {
+function getSchemaFieldDataDefinition(schemaName: string, fieldName: string, data: FlatSchemaDataType): string {
   switch (data.type) {
     case 'String':
     case 'Boolean':
@@ -161,13 +168,40 @@ function getSchemaFieldDataDefinition(data: FlatSchemaDataType): string {
     case 'Enum':
       return `type: String, enum: ${data.refEnum}`;
     case 'ObjectId':
-      return `type: Schema.Types.ObjectId${data.refModel ? `, ref: '${data.refModel}'` : ``}`;
+      return `type: Schema.Types.ObjectId${
+        data.refModels.length === 1
+          ? `, ref: '${data.refModels[0]}'`
+          : data.refModels.length > 1
+          ? `, ref: function() { return config.schemas.${schemaName}.${fieldName}.ref(this); }`
+          : ``
+      }`;
     case 'Schema':
       return `type: ${getSchemaName(data.refSchema)}`;
     case 'External':
       throw new Error('Cannot use external types for non-virtual fields');
     default:
       assertUnreachable(data);
+  }
+}
+
+export function getModelRefs(schema: SchemaDataType): string[] {
+  switch (schema.type) {
+    case 'String':
+    case 'Number':
+    case 'Boolean':
+    case 'Date':
+    case 'Enum':
+    case 'External':
+    case 'Schema':
+      return [];
+    case 'ObjectId':
+      return schema.refModels;
+    case 'Array':
+      return getModelRefs(schema.elementType);
+    case 'Map':
+      return getModelRefs(schema.elementType);
+    default:
+      assertUnreachable(schema);
   }
 }
 

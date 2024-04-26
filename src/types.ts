@@ -10,11 +10,20 @@ export interface DbDefinition {
   models: {
     [modelName: string]: Model;
   };
+  unions: Unions;
   externals: string[];
+}
+
+export interface Unions {
+  [unionName: string]: Union;
 }
 
 export interface Enum {
   values: string[];
+}
+
+export interface Union {
+  refModels: string[];
 }
 
 export interface Model {
@@ -45,7 +54,7 @@ export type SchemaDataType =
     }
   | {
       type: 'ObjectId';
-      refModel: string | null;
+      refModels: string[];
     }
   | {
       type: 'Schema';

@@ -39,6 +39,7 @@ export interface ProjectDetailsSchemaDocument extends Document {
   number: number | null | undefined;
   readonly isActive: boolean;
   startDate: Date | null | undefined;
+  dynamicRef: Types.ObjectId;
 }
 
 export interface MongooseFactoryConfig {
@@ -65,12 +66,15 @@ export interface MongooseFactoryConfig {
     },
     Project?: {
     },
-    ProjectDetails?: {
+    ProjectDetails: {
       startDate: {
         validate: {
           validator: (val: Date | null | undefined) => any,
           message?: string,
         },
+      },
+      dynamicRef: {
+        ref: (doc: ProjectDetailsSchema) => string,
       },
     }
   }
@@ -85,6 +89,7 @@ export function initializeMongoose(config: MongooseFactoryConfig) {
       number: { unique: true, type: Number },
       isActive: { required: true, immutable: true, type: Boolean },
       startDate: { type: Date, validate: config.schemas.ProjectDetails.startDate.validate },
+      dynamicRef: { required: true, type: Schema.Types.ObjectId, ref: function() { return config.schemas.ProjectDetails.dynamicRef.ref(this); } },
     }
   );
   
