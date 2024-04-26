@@ -1,18 +1,21 @@
 import { sortSchemasTopologically } from './util/topological-sort';
 import { DbDefinition, Schema, SchemaField, FlatSchemaDataType, Model, SchemaDataType } from '../types';
 import { assertUnreachable, notNullOrUndefined } from '../util';
-import { getModelTypeName, getSchemaTypeName, getTypeNameWithNullability } from './types';
+import { getModelTypeName, getTypeNameWithNullability } from './types';
 
 export function generateMongoose(sdl: DbDefinition): string {
   const sortedSchemas = sortSchemasTopologically(sdl.schemas);
-  const schemaContent = sortedSchemas.map(({ name, schema }) =>
-    generateSchema(name, getSchemaTypeName(name), schema, false)
-  );
+  const schemaContent = sortedSchemas.map(({ name, schema }) => generateSchema(name, schema, false));
   const modelContent = Object.entries(sdl.models).map(([name, data]) => generateModel(name, data));
   const returnContent = [
     `return {`,
-    `schemas: { ${Object.keys(sdl.models).concat(Object.keys(sdl.schemas)).join(', ')} }`,
-    `models: { ${Object.keys(sdl.models).join(', ')} }`,
+    `schemas: { ${Object.keys(sdl.models)
+      .concat(Object.keys(sdl.schemas))
+      .map((schema) => getSchemaName(schema))
+      .join(', ')} },`,
+    `models: { ${Object.keys(sdl.models)
+      .map((model) => getModelName(model))
+      .join(', ')} }`,
     `};`,
   ].join('\n');
 
@@ -79,14 +82,14 @@ function generateFactoryConfigType(sdl: DbDefinition) {
 }
 
 function generateModel(name: string, model: Model) {
-  const schemaContent = generateSchema(name, getModelTypeName(name), model.schema, true);
+  const schemaContent = generateSchema(name, model.schema, true);
   const modelContent = `const ${getModelName(name)} = model<${getModelTypeName(name)}>('${name}', ${getSchemaName(
     name
   )});`;
   return `${schemaContent}\n\n${modelContent}`;
 }
 
-function generateSchema(name: string, typeName: string, schema: Schema, includeTimestamps: boolean) {
+function generateSchema(name: string, schema: Schema, includeTimestamps: boolean) {
   const schemaName = getSchemaName(name);
 
   const fields = Object.entries(schema).map(([fieldName, data]) => ({ fieldName, data }));
@@ -118,7 +121,7 @@ function generateSchema(name: string, typeName: string, schema: Schema, includeT
       .join('\n') || null;
 
   return [
-    `const ${schemaName} = new Schema<${typeName}>(`,
+    `const ${schemaName} = new Schema(`,
     `{`,
     schemaFieldContent,
     `}${includeTimestamps ? ',' : ''}`,

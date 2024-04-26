@@ -32,7 +32,7 @@ schema ProjectDetails {
 Into this -
 
 ```typescript
-import { Types, Document } from 'mongoose';
+import { Types, Document, Schema, model } from 'mongoose';
 
 export enum UserStatus {
   Pending = 'Pending',
@@ -59,38 +59,44 @@ export interface ProjectDocument extends Document {
 
 export interface ProjectDetailsSchemaDocument extends Document {
   id: string;
-  createdAt: Date;
-  updatedAt: Date;
   name: string;
   alternateNames: string[];
   number: number | null | undefined;
 }
 
-import { Schema, model } from 'mongoose';
+export function initializeMongoose(config: MongooseFactoryConfig) {
+  const ProjectDetailsSchema = new Schema({
+    name: { required: true, type: String },
+    alternateNames: { required: true, type: [{ type: String, required: true }] },
+    number: { type: Number },
+  });
 
-const ProjectDetailsSchema = new Schema<ProjectDetailsSchemaDocument>({
-  name: { required: true, type: String },
-  alternateNames: { required: true, type: [{ type: String, required: true }] },
-  number: { type: Number },
-});
+  const UserSchema = new Schema(
+    {
+      email: { required: true, index: true, unique: true, type: String },
+      name: { type: String },
+      status: { required: true, type: String, enum: UserStatus },
+    },
+    { timestamps: true }
+  );
 
-const UserSchema = new Schema<UserDocument>({
-  email: { required: true, index: true, unique: true, type: String },
-  name: { type: String },
-  status: { required: true, type: String, enum: UserStatus },
-});
+  const UserModel = model<UserDocument>('User', UserSchema);
 
-export const UserModel = model<UserDocument>('User', UserSchema);
+  const ProjectSchema = new Schema(
+    {
+      creator: { required: true, index: true, type: Schema.Types.ObjectId, ref: 'User' },
+      details: { required: true, type: ProjectDetailsSchema },
+    },
+    { timestamps: true }
+  );
 
-const ProjectSchema = new Schema<ProjectDocument>(
-  {
-    creator: { required: true, index: true, type: Schema.Types.ObjectId, ref: 'User' },
-    details: { required: true, type: ProjectDetailsSchema },
-  },
-  { timestamps: true }
-);
+  const ProjectModel = model<ProjectDocument>('Project', ProjectSchema);
 
-export const ProjectModel = model<ProjectDocument>('Project', ProjectSchema);
+  return {
+    schemas: { UserSchema, ProjectSchema, ProjectDetailsSchema },
+    models: { UserModel, ProjectModel },
+  };
+}
 ```
 
 By installing this package and adding a script to your project's package.json

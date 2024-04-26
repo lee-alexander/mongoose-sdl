@@ -82,7 +82,7 @@ export interface MongooseFactoryConfig {
 
 export function initializeMongoose(config: MongooseFactoryConfig) {
   
-  const ProjectDetailsSchema = new Schema<ProjectDetailsSchemaDocument>(
+  const ProjectDetailsSchema = new Schema(
     {
       name: { required: true, type: String },
       alternateNames: { required: true, type: [{ type: String, required: true }] },
@@ -93,7 +93,7 @@ export function initializeMongoose(config: MongooseFactoryConfig) {
     }
   );
   
-  const UserSchema = new Schema<UserDocument>(
+  const UserSchema = new Schema(
     {
       email: { required: true, index: true, unique: true, type: String },
       name: { type: String },
@@ -117,7 +117,7 @@ export function initializeMongoose(config: MongooseFactoryConfig) {
   
   const UserModel = model<UserDocument>('User', UserSchema);
   
-  const ProjectSchema = new Schema<ProjectDocument>(
+  const ProjectSchema = new Schema(
     {
       creator: { required: true, index: true, type: Schema.Types.ObjectId, ref: 'User' },
       details: { required: true, type: ProjectDetailsSchema },
@@ -130,8 +130,8 @@ export function initializeMongoose(config: MongooseFactoryConfig) {
   const ProjectModel = model<ProjectDocument>('Project', ProjectSchema);
   
   return {
-    schemas: { User, Project, ProjectDetails }
-    models: { User, Project }
+    schemas: { UserSchema, ProjectSchema, ProjectDetailsSchema },
+    models: { UserModel, ProjectModel }
   };
   
 }"
@@ -181,13 +181,13 @@ export interface MongooseFactoryConfig {
 
 export function initializeMongoose(config: MongooseFactoryConfig) {
   
-  const CompanySchema = new Schema<CompanySchemaDocument>(
+  const CompanySchema = new Schema(
     {
       name: { type: String },
     }
   );
   
-  const ContractorSchema = new Schema<ContractorSchemaDocument>(
+  const ContractorSchema = new Schema(
     {
       name: { required: true, type: String },
       company: { type: CompanySchema },
@@ -195,14 +195,14 @@ export function initializeMongoose(config: MongooseFactoryConfig) {
   );
   ContractorSchema.add({ parentContractor: { required: true, type: ContractorSchema } });
   
-  const ProjectDetailsSchema = new Schema<ProjectDetailsSchemaDocument>(
+  const ProjectDetailsSchema = new Schema(
     {
       name: { required: true, type: String },
       contractor: { required: true, type: ContractorSchema },
     }
   );
   
-  const ProjectSchema = new Schema<ProjectDocument>(
+  const ProjectSchema = new Schema(
     {
       name: { required: true, type: String },
       details: { required: true, type: ProjectDetailsSchema },
@@ -213,8 +213,8 @@ export function initializeMongoose(config: MongooseFactoryConfig) {
   const ProjectModel = model<ProjectDocument>('Project', ProjectSchema);
   
   return {
-    schemas: { Project, Company, Contractor, ProjectDetails }
-    models: { Project }
+    schemas: { ProjectSchema, CompanySchema, ContractorSchema, ProjectDetailsSchema },
+    models: { ProjectModel }
   };
   
 }"

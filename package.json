@@ -1,6 +1,6 @@
 {
   "name": "@rlalexander31/mongoose-sdl",
-  "version": "0.0.4",
+  "version": "0.0.7",
   "description": "Codegen util to generate TS definitions and Mongoose schemas from a custom SDL format",
   "scripts": {
     "test": "jest ./src",
