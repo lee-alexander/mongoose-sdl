@@ -147,5 +147,5 @@ Directives customize generation behavior on fields:
 - `@index` - Pass-thru to Mongoose schema config
 - `@unique` - Pass-thru to Mongoose schema config
 - `@immutable` - Pass-thru to Mongoose schema config
-- `@virtual` - Indicates the field will be virtual. Allows for using
-- `@validate`
+- `@virtual` - Indicates the field will be virtual. Allows for using external types. Requires specifying an implementation of the virtual field when calling the auto-generated initializer function.
+- `@validate` - Indicates the field will have a custom validator added on. Requires specifying the validator implementation for the field when calling the auto-generated initializer function.

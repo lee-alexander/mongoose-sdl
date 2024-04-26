@@ -59,7 +59,13 @@ function generateFactoryConfigType(sdl: DbDefinition) {
                       `},`,
                     ]
                   : []),
-                ...(getModelRefs(data.dataType).length > 1 ? [`ref: (doc: ${getSchemaName(name)}) => string,`] : []),
+                ...(getModelRefs(data.dataType).length > 1
+                  ? [
+                      `ref: (doc: ${getSchemaName(name)}) => ${getModelRefs(data.dataType)
+                        .map((model) => `'${model}'`)
+                        .join(' | ')},`,
+                    ]
+                  : []),
                 `},`,
               ]
             : []

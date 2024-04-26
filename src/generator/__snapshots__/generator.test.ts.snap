@@ -74,7 +74,7 @@ export interface MongooseFactoryConfig {
         },
       },
       dynamicRef: {
-        ref: (doc: ProjectDetailsSchema) => string,
+        ref: (doc: ProjectDetailsSchema) => 'User' | 'Project',
       },
     }
   }
