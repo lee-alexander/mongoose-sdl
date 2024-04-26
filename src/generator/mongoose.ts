@@ -11,13 +11,12 @@ export function generateMongoose(sdl: DbDefinition): string {
   const modelContent = Object.entries(sdl.models).map(([name, data]) => generateModel(name, data));
   const returnContent = [
     `return {`,
-    `  schemas: { ${Object.keys(sdl.models).concat(Object.keys(sdl.schemas)).join(', ')} }`,
-    `  models: { ${Object.keys(sdl.models).join(', ')} }`,
+    `schemas: { ${Object.keys(sdl.models).concat(Object.keys(sdl.schemas)).join(', ')} }`,
+    `models: { ${Object.keys(sdl.models).join(', ')} }`,
     `};`,
   ].join('\n');
 
   return [
-    `import { Schema, model } from 'mongoose';`,
     generateFactoryConfigType(sdl),
     `export function initializeMongoose(config: MongooseFactoryConfig) {`,
     ...schemaContent,
@@ -33,20 +32,20 @@ function generateFactoryConfigType(sdl: DbDefinition) {
     .concat(Object.entries(sdl.schemas).map(([name, schema]) => ({ name, schema })))
     .map(({ name, schema }) =>
       [
-        `  ${name}${Object.values(schema).some((data) => data.isVirtual) ? '' : '?'}: {`,
+        `${name}${Object.values(schema).some((data) => data.isVirtual) ? '' : '?'}: {`,
         ...Object.entries(schema).flatMap(([fieldName, data]) => [
-          `    ${fieldName}${data.isVirtual ? '' : '?'}: {`,
+          `${fieldName}${data.isVirtual ? '' : '?'}: {`,
           ...(data.isVirtual
             ? [
-                `      virtual: {`,
-                `        get?: (doc: ${getSchemaName(name)}) => ${getTypeName(data.dataType)}`,
-                `        set?: (doc: ${getSchemaName(name)}, value: ${getTypeName(data.dataType)}) => void`,
-                `      }`,
+                `virtual: {`,
+                `get?: (doc: ${getSchemaName(name)}) => ${getTypeName(data.dataType)}`,
+                `set?: (doc: ${getSchemaName(name)}, value: ${getTypeName(data.dataType)}) => void`,
+                `}`,
               ]
             : []),
-          `    },`,
+          `},`,
         ]),
-        `  }`,
+        `}`,
       ].join('\n')
     )
     .join(',\n');
@@ -71,8 +70,7 @@ function generateSchema(name: string, typeName: string, schema: Schema, includeT
   const recursiveFields = fields.filter((f) => !f.data.isVirtual && getSchemaRef(f.data.dataType) === name);
 
   const schemaFieldContent =
-    regularFields.map(({ fieldName, data }) => `    ${fieldName}: ${getSchemaFieldDefinition(data)},`).join('\n') ||
-    null;
+    regularFields.map(({ fieldName, data }) => `${fieldName}: ${getSchemaFieldDefinition(data)},`).join('\n') || null;
   const recursiveFieldContent =
     recursiveFields
       .map(({ fieldName, data }) => `${schemaName}.add({ ${fieldName}: ${getSchemaFieldDefinition(data)} });`)
@@ -81,20 +79,20 @@ function generateSchema(name: string, typeName: string, schema: Schema, includeT
     virtualFields
       .flatMap(({ fieldName }) => [
         `if (config.schemas.${schemaName}.${fieldName}.virtual.get) {`,
-        `  ${schemaName}.virtual('${fieldName}').get((_, __, doc) => config.schemas.${schemaName}.virtual.get(doc))`,
+        `${schemaName}.virtual('${fieldName}').get((_, __, doc) => config.schemas.${schemaName}.virtual.get(doc))`,
         `}`,
         `if (config.schemas.${schemaName}.${fieldName}.virtual.set) {`,
-        `  ${schemaName}.virtual('${fieldName}').set((value, _, doc) => { config.schemas.${schemaName}.virtual.set(doc, value); })`,
+        `${schemaName}.virtual('${fieldName}').set((value, _, doc) => { config.schemas.${schemaName}.virtual.set(doc, value); })`,
         `}`,
       ])
       .join('\n') || null;
 
   return [
     `const ${schemaName} = new Schema<${typeName}>(`,
-    `  {`,
+    `{`,
     schemaFieldContent,
-    `  }${includeTimestamps ? ',' : ''}`,
-    includeTimestamps ? `  { timestamps: true }` : null,
+    `}${includeTimestamps ? ',' : ''}`,
+    includeTimestamps ? `{ timestamps: true }` : null,
     `);`,
     recursiveFieldContent,
     virtualFieldContent,

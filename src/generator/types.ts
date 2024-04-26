@@ -21,7 +21,7 @@ export function generateTypes(sdl: DbDefinition, config: CodegenConfig): string 
 
   return [
     [
-      `import { Types, Document } from 'mongoose';`,
+      `import { Types, Document, Schema, model } from 'mongoose';`,
       ...Object.entries(externalImports).map(([path, types]) => `import { ${types.join(', ')} } from '${path}';`),
     ].join('\n'),
     ...enums,
@@ -31,18 +31,18 @@ export function generateTypes(sdl: DbDefinition, config: CodegenConfig): string 
 }
 
 function generateEnumType(name: string, data: Enum) {
-  const enumValues = data.values.map((value) => `  ${value} = '${value}',`).join('\n');
+  const enumValues = data.values.map((value) => `${value} = '${value}',`).join('\n');
   return `export enum ${name} {\n${enumValues}\n}`;
 }
 
 function generateSchemaType(name: string, data: Schema, includeTimestamps: boolean) {
-  const defaultFields = ['  id: string;']
-    .concat(includeTimestamps ? ['  createdAt: Date;', '  updatedAt: Date;'] : [])
+  const defaultFields = ['id: string;']
+    .concat(includeTimestamps ? ['createdAt: Date;', 'updatedAt: Date;'] : [])
     .join('\n');
   const customFields = Object.entries(data)
     .map(
       ([name, data]) =>
-        `  ${data.isImmutable ? 'readonly ' : ''}${name}: ${getTypeName(data.dataType)}${
+        `${data.isImmutable ? 'readonly ' : ''}${name}: ${getTypeName(data.dataType)}${
           data.isRequired ? '' : ' | null | undefined'
         };`
     )

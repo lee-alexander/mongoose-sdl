@@ -1,7 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`generate example.mgsdl 1`] = `
-"import { Types, Document } from 'mongoose';
+"import { Types, Document, Schema, model } from 'mongoose';
 import { UserDetailsInterface } from '../externals';
 
 export enum UserStatus {
@@ -41,115 +41,113 @@ export interface ProjectDetailsSchemaDocument extends Document {
   startDate: Date | null | undefined;
 }
 
-import { Schema, model } from 'mongoose';
-
 export interface MongooseFactoryConfig {
-schemas: {
-  User: {
-    email?: {
+  schemas: {
+    User: {
+      email?: {
+      },
+      name?: {
+      },
+      status?: {
+      },
+      unknownRef?: {
+      },
+      fullName: {
+        virtual: {
+          get?: (doc: UserSchema) => string
+          set?: (doc: UserSchema, value: string) => void
+        }
+      },
+      computedFields: {
+        virtual: {
+          get?: (doc: UserSchema) => UserDetailsInterface
+          set?: (doc: UserSchema, value: UserDetailsInterface) => void
+        }
+      },
     },
-    name?: {
+    Project?: {
+      creator?: {
+      },
+      details?: {
+      },
+      lastAccessedByUserId?: {
+      },
+      detailsByUserId?: {
+      },
     },
-    status?: {
-    },
-    unknownRef?: {
-    },
-    fullName: {
-      virtual: {
-        get?: (doc: UserSchema) => string
-        set?: (doc: UserSchema, value: string) => void
-      }
-    },
-    computedFields: {
-      virtual: {
-        get?: (doc: UserSchema) => UserDetailsInterface
-        set?: (doc: UserSchema, value: UserDetailsInterface) => void
-      }
-    },
-  },
-  Project?: {
-    creator?: {
-    },
-    details?: {
-    },
-    lastAccessedByUserId?: {
-    },
-    detailsByUserId?: {
-    },
-  },
-  ProjectDetails?: {
-    name?: {
-    },
-    alternateNames?: {
-    },
-    number?: {
-    },
-    isActive?: {
-    },
-    startDate?: {
-    },
+    ProjectDetails?: {
+      name?: {
+      },
+      alternateNames?: {
+      },
+      number?: {
+      },
+      isActive?: {
+      },
+      startDate?: {
+      },
+    }
   }
-}
 }
 
 export function initializeMongoose(config: MongooseFactoryConfig) {
-
-const ProjectDetailsSchema = new Schema<ProjectDetailsSchemaDocument>(
-  {
-    name: { required: true, type: String },
-    alternateNames: { required: true, type: [{ type: String, required: true }] },
-    number: { unique: true, type: Number },
-    isActive: { required: true, immutable: true, type: Boolean },
-    startDate: { type: Date },
+  
+  const ProjectDetailsSchema = new Schema<ProjectDetailsSchemaDocument>(
+    {
+      name: { required: true, type: String },
+      alternateNames: { required: true, type: [{ type: String, required: true }] },
+      number: { unique: true, type: Number },
+      isActive: { required: true, immutable: true, type: Boolean },
+      startDate: { type: Date },
+    }
+  );
+  
+  const UserSchema = new Schema<UserDocument>(
+    {
+      email: { required: true, index: true, unique: true, type: String },
+      name: { type: String },
+      status: { required: true, type: String, enum: UserStatus },
+      unknownRef: { required: true, type: Schema.Types.ObjectId },
+    },
+    { timestamps: true }
+  );
+  if (config.schemas.UserSchema.fullName.virtual.get) {
+    UserSchema.virtual('fullName').get((_, __, doc) => config.schemas.UserSchema.virtual.get(doc))
   }
-);
-
-const UserSchema = new Schema<UserDocument>(
-  {
-    email: { required: true, index: true, unique: true, type: String },
-    name: { type: String },
-    status: { required: true, type: String, enum: UserStatus },
-    unknownRef: { required: true, type: Schema.Types.ObjectId },
-  },
-  { timestamps: true }
-);
-if (config.schemas.UserSchema.fullName.virtual.get) {
-  UserSchema.virtual('fullName').get((_, __, doc) => config.schemas.UserSchema.virtual.get(doc))
-}
-if (config.schemas.UserSchema.fullName.virtual.set) {
-  UserSchema.virtual('fullName').set((value, _, doc) => { config.schemas.UserSchema.virtual.set(doc, value); })
-}
-if (config.schemas.UserSchema.computedFields.virtual.get) {
-  UserSchema.virtual('computedFields').get((_, __, doc) => config.schemas.UserSchema.virtual.get(doc))
-}
-if (config.schemas.UserSchema.computedFields.virtual.set) {
-  UserSchema.virtual('computedFields').set((value, _, doc) => { config.schemas.UserSchema.virtual.set(doc, value); })
-}
-
-const UserModel = model<UserDocument>('User', UserSchema);
-
-const ProjectSchema = new Schema<ProjectDocument>(
-  {
-    creator: { required: true, index: true, type: Schema.Types.ObjectId, ref: 'User' },
-    details: { required: true, type: ProjectDetailsSchema },
-    lastAccessedByUserId: { required: true, type: Map, of: { type: String } },
-    detailsByUserId: { immutable: true, type: Map, of: { type: ProjectDetailsSchema, required: true } },
-  },
-  { timestamps: true }
-);
-
-const ProjectModel = model<ProjectDocument>('Project', ProjectSchema);
-
-return {
-  schemas: { User, Project, ProjectDetails }
-  models: { User, Project }
-};
-
+  if (config.schemas.UserSchema.fullName.virtual.set) {
+    UserSchema.virtual('fullName').set((value, _, doc) => { config.schemas.UserSchema.virtual.set(doc, value); })
+  }
+  if (config.schemas.UserSchema.computedFields.virtual.get) {
+    UserSchema.virtual('computedFields').get((_, __, doc) => config.schemas.UserSchema.virtual.get(doc))
+  }
+  if (config.schemas.UserSchema.computedFields.virtual.set) {
+    UserSchema.virtual('computedFields').set((value, _, doc) => { config.schemas.UserSchema.virtual.set(doc, value); })
+  }
+  
+  const UserModel = model<UserDocument>('User', UserSchema);
+  
+  const ProjectSchema = new Schema<ProjectDocument>(
+    {
+      creator: { required: true, index: true, type: Schema.Types.ObjectId, ref: 'User' },
+      details: { required: true, type: ProjectDetailsSchema },
+      lastAccessedByUserId: { required: true, type: Map, of: { type: String } },
+      detailsByUserId: { immutable: true, type: Map, of: { type: ProjectDetailsSchema, required: true } },
+    },
+    { timestamps: true }
+  );
+  
+  const ProjectModel = model<ProjectDocument>('Project', ProjectSchema);
+  
+  return {
+    schemas: { User, Project, ProjectDetails }
+    models: { User, Project }
+  };
+  
 }"
 `;
 
 exports[`generate topological-ordering.mgsdl 1`] = `
-"import { Types, Document } from 'mongoose';
+"import { Types, Document, Schema, model } from 'mongoose';
 
 export interface ProjectDocument extends Document {
   id: string;
@@ -177,74 +175,72 @@ export interface ProjectDetailsSchemaDocument extends Document {
   contractor: ContractorSchemaDocument;
 }
 
-import { Schema, model } from 'mongoose';
-
 export interface MongooseFactoryConfig {
-schemas: {
-  Project?: {
-    name?: {
+  schemas: {
+    Project?: {
+      name?: {
+      },
+      details?: {
+      },
     },
-    details?: {
+    Company?: {
+      name?: {
+      },
     },
-  },
-  Company?: {
-    name?: {
+    Contractor?: {
+      name?: {
+      },
+      company?: {
+      },
+      parentContractor?: {
+      },
     },
-  },
-  Contractor?: {
-    name?: {
-    },
-    company?: {
-    },
-    parentContractor?: {
-    },
-  },
-  ProjectDetails?: {
-    name?: {
-    },
-    contractor?: {
-    },
+    ProjectDetails?: {
+      name?: {
+      },
+      contractor?: {
+      },
+    }
   }
-}
 }
 
 export function initializeMongoose(config: MongooseFactoryConfig) {
-
-const CompanySchema = new Schema<CompanySchemaDocument>(
-  {
-    name: { type: String },
-  }
-);
-
-const ContractorSchema = new Schema<ContractorSchemaDocument>(
-  {
-    name: { required: true, type: String },
-    company: { type: CompanySchema },
-  }
-);
-ContractorSchema.add({ parentContractor: { required: true, type: ContractorSchema } });
-
-const ProjectDetailsSchema = new Schema<ProjectDetailsSchemaDocument>(
-  {
-    name: { required: true, type: String },
-    contractor: { required: true, type: ContractorSchema },
-  }
-);
-
-const ProjectSchema = new Schema<ProjectDocument>(
-  {
-    name: { required: true, type: String },
-    details: { required: true, type: ProjectDetailsSchema },
-  },
-  { timestamps: true }
-);
-
-const ProjectModel = model<ProjectDocument>('Project', ProjectSchema);
-
-return {
-  schemas: { Project, Company, Contractor, ProjectDetails }
-  models: { Project }
-};
-
+  
+  const CompanySchema = new Schema<CompanySchemaDocument>(
+    {
+      name: { type: String },
+    }
+  );
+  
+  const ContractorSchema = new Schema<ContractorSchemaDocument>(
+    {
+      name: { required: true, type: String },
+      company: { type: CompanySchema },
+    }
+  );
+  ContractorSchema.add({ parentContractor: { required: true, type: ContractorSchema } });
+  
+  const ProjectDetailsSchema = new Schema<ProjectDetailsSchemaDocument>(
+    {
+      name: { required: true, type: String },
+      contractor: { required: true, type: ContractorSchema },
+    }
+  );
+  
+  const ProjectSchema = new Schema<ProjectDocument>(
+    {
+      name: { required: true, type: String },
+      details: { required: true, type: ProjectDetailsSchema },
+    },
+    { timestamps: true }
+  );
+  
+  const ProjectModel = model<ProjectDocument>('Project', ProjectSchema);
+  
+  return {
+    schemas: { Project, Company, Contractor, ProjectDetails }
+    models: { Project }
+  };
+  
 }"
 `;
