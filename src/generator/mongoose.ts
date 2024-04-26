@@ -1,7 +1,7 @@
 import { sortSchemasTopologically } from './util/topological-sort';
 import { DbDefinition, Schema, SchemaField, FlatSchemaDataType, Model, SchemaDataType } from '../types';
 import { assertUnreachable, notNullOrUndefined } from '../util';
-import { getModelTypeName, getSchemaTypeName } from './types';
+import { getModelTypeName, getSchemaTypeName, getTypeName } from './types';
 
 export function generateMongoose(sdl: DbDefinition): string {
   const sortedSchemas = sortSchemasTopologically(sdl.schemas);
@@ -9,39 +9,105 @@ export function generateMongoose(sdl: DbDefinition): string {
     generateSchema(name, getSchemaTypeName(name), schema, false)
   );
   const modelContent = Object.entries(sdl.models).map(([name, data]) => generateModel(name, data));
+  const returnContent = [
+    `return {`,
+    `  schemas: { ${Object.keys(sdl.models).concat(Object.keys(sdl.schemas)).join(', ')} }`,
+    `  models: { ${Object.keys(sdl.models).join(', ')} }`,
+    `};`,
+  ].join('\n');
 
-  return [`import { Schema, model } from 'mongoose';`, ...schemaContent, ...modelContent].join('\n\n');
+  return [
+    `import { Schema, model } from 'mongoose';`,
+    generateFactoryConfigType(sdl),
+    `export function initializeMongoose(config: MongooseFactoryConfig) {`,
+    ...schemaContent,
+    ...modelContent,
+    returnContent,
+    `}`,
+  ].join('\n\n');
+}
+
+function generateFactoryConfigType(sdl: DbDefinition) {
+  const schemas = Object.entries(sdl.models)
+    .map(([name, { schema }]) => ({ name, schema }))
+    .concat(Object.entries(sdl.schemas).map(([name, schema]) => ({ name, schema })))
+    .map(({ name, schema }) =>
+      [
+        `  ${name}${Object.values(schema).some((data) => data.isVirtual) ? '' : '?'}: {`,
+        ...Object.entries(schema).flatMap(([fieldName, data]) => [
+          `    ${fieldName}${data.isVirtual ? '' : '?'}: {`,
+          ...(data.isVirtual
+            ? [
+                `      virtual: {`,
+                `        get?: (doc: ${getSchemaName(name)}) => ${getTypeName(data.dataType)}`,
+                `        set?: (doc: ${getSchemaName(name)}, value: ${getTypeName(data.dataType)}) => void`,
+                `      }`,
+              ]
+            : []),
+          `    }`,
+        ]),
+        `  }`,
+      ].join(',\n')
+    )
+    .join(',\n');
+
+  return [`export interface MongooseFactoryConfig {`, `schemas: {`, schemas, `}`, `}`].join('\n');
 }
 
 function generateModel(name: string, model: Model) {
   const schemaContent = generateSchema(name, getModelTypeName(name), model.schema, true);
-  const modelContent = `export const ${getModelName(name)} = model<${getModelTypeName(
+  const modelContent = `const ${getModelName(name)} = model<${getModelTypeName(name)}>('${name}', ${getSchemaName(
     name
-  )}>('${name}', ${getSchemaName(name)});`;
+  )});`;
   return `${schemaContent}\n\n${modelContent}`;
 }
 
 function generateSchema(name: string, typeName: string, schema: Schema, includeTimestamps: boolean) {
-  const schemaFieldContent = Object.entries(schema)
-    .map(([fieldName, data]) =>
-      getSchemaRef(data.dataType) === name ? null : `    ${fieldName}: ${getSchemaFieldDefinition(data)},`
-    )
+  const schemaName = getSchemaName(name);
+
+  const fields = Object.entries(schema).map(([fieldName, data]) => ({ fieldName, data }));
+  const virtualFields = fields.filter((f) => f.data.isVirtual);
+  const regularFields = fields.filter((f) => !f.data.isVirtual && getSchemaRef(f.data.dataType) !== name);
+  const recursiveFields = fields.filter((f) => !f.data.isVirtual && getSchemaRef(f.data.dataType) === name);
+
+  const schemaFieldContent =
+    regularFields.map(({ fieldName, data }) => `    ${fieldName}: ${getSchemaFieldDefinition(data)},`).join('\n') ||
+    null;
+  const recursiveFieldContent =
+    recursiveFields
+      .map(({ fieldName, data }) => `${schemaName}.add({ ${fieldName}: ${getSchemaFieldDefinition(data)} });`)
+      .join('\n') || null;
+  const virtualFieldContent =
+    virtualFields
+      .flatMap(({ fieldName }) => [
+        `if (config.schemas.${schemaName}.${fieldName}.virtual.get) {`,
+        `  ${schemaName}.virtual('${fieldName}').get((_, __, doc) => config.schemas.${schemaName}.virtual.get(doc))`,
+        `}`,
+        `if (config.schemas.${schemaName}.${fieldName}.virtual.set) {`,
+        `  ${schemaName}.virtual('${fieldName}').set((value, _, doc) => { config.schemas.${schemaName}.virtual.set(doc, value); })`,
+        `}`,
+      ])
+      .join('\n') || null;
+
+  return [
+    `const ${schemaName} = new Schema<${typeName}>(`,
+    `  {`,
+    schemaFieldContent,
+    `  }${includeTimestamps ? ',' : ''}`,
+    includeTimestamps ? `  { timestamps: true }` : null,
+    `);`,
+    recursiveFieldContent,
+    virtualFieldContent,
+  ]
     .filter(notNullOrUndefined)
     .join('\n');
-
-  const recursivePatchContent = Object.entries(schema)
-    .filter(([, data]) => getSchemaRef(data.dataType) === name)
-    .map(([fieldName, data]) => `${getSchemaName(name)}.add({ ${fieldName}: ${getSchemaFieldDefinition(data)} });`)
-    .join('\n');
-
-  const timestampsContent = includeTimestamps ? `,\n{ timestamps: true }` : '';
-
-  return `const ${getSchemaName(name)} = new Schema<${typeName}>(
-  {\n${schemaFieldContent}
-  }${timestampsContent}\n);${recursivePatchContent ? `\n${recursivePatchContent}` : ''}`;
 }
 
 function getSchemaFieldDefinition(field: SchemaField): string {
+  if (field.isVirtual) {
+    throw new Error('Cannot create schema field definition for virtual field');
+  }
+
   const baseDefinition = [
     field.isRequired ? 'required: true' : null,
     field.isIndex ? 'index: true' : null,
@@ -77,6 +143,8 @@ function getSchemaFieldDataDefinition(data: FlatSchemaDataType): string {
       return `type: Schema.Types.ObjectId${data.refModel ? `, ref: '${data.refModel}'` : ``}`;
     case 'Schema':
       return `type: ${getSchemaName(data.refSchema)}`;
+    case 'External':
+      throw new Error('Cannot use external types for non-virtual fields');
     default:
       assertUnreachable(data);
   }
@@ -90,6 +158,7 @@ export function getSchemaRef(schema: SchemaDataType): string | null {
     case 'Date':
     case 'Enum':
     case 'ObjectId':
+    case 'External':
       return null;
     case 'Schema':
       return schema.refSchema;

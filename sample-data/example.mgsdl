@@ -1,3 +1,5 @@
+external UserDetailsInterface
+
 enum UserStatus {
   Pending
   Active
@@ -9,6 +11,8 @@ model User {
   name: String
   status: UserStatus!
   unknownRef: ObjectId!
+  fullName: String! @virtual
+  computedFields: UserDetailsInterface! @virtual
 }
 
 model Project {

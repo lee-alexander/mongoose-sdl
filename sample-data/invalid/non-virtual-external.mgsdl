@@ -1,0 +1,6 @@
+external UserDetailsInterface
+
+model User {
+  email: String
+  computedFields: UserDetailsInterface!
+}

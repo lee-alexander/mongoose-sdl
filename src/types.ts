@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export interface DbDefinition {
   schemas: {
     [schemaName: string]: Schema;
@@ -8,6 +10,7 @@ export interface DbDefinition {
   models: {
     [modelName: string]: Model;
   };
+  externals: string[];
 }
 
 export interface Enum {
@@ -28,6 +31,7 @@ export interface SchemaField {
   isIndex: boolean;
   isUnique: boolean;
   isImmutable: boolean;
+  isVirtual: boolean;
 }
 
 export type SchemaDataType =
@@ -47,6 +51,10 @@ export type SchemaDataType =
       refSchema: string;
     }
   | {
+      type: 'External';
+      refType: string;
+    }
+  | {
       type: 'Array';
       elementType: FlatSchemaDataType;
       elementRequired: boolean;
@@ -58,3 +66,11 @@ export type SchemaDataType =
     };
 
 export type FlatSchemaDataType = Exclude<SchemaDataType, { type: 'Array' | 'Map' }>;
+
+export const CodegenConfigSchema = z.object({
+  inputFile: z.string(),
+  outputFile: z.string(),
+  externalImportPaths: z.record(z.string(), z.string()).optional(),
+});
+
+export type CodegenConfig = z.infer<typeof CodegenConfigSchema>;

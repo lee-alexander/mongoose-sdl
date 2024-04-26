@@ -1,14 +1,33 @@
-import { DbDefinition, Enum, Schema, SchemaDataType, Model } from '../types';
-import { assertUnreachable } from '../util';
+import { DbDefinition, Enum, Schema, SchemaDataType, Model, CodegenConfig } from '../types';
+import { assertUnreachable, groupItemsBy } from '../util';
 
-export function generateTypes(sdl: DbDefinition): string {
+export function generateTypes(sdl: DbDefinition, config: CodegenConfig): string {
   const enums = Object.entries(sdl.enums).map(([name, data]) => generateEnumType(name, data));
   const models = Object.entries(sdl.models).map(([name, data]) => generateModelType(getModelTypeName(name), data));
   const schemas = Object.entries(sdl.schemas).map(([name, data]) =>
     generateSchemaType(getSchemaTypeName(name), data, false)
   );
 
-  return [`import { Types, Document } from 'mongoose';`, ...enums, ...models, ...schemas].join('\n\n');
+  const missingExternals = sdl.externals.filter((external) => !config.externalImportPaths?.[external]);
+  if (missingExternals.length > 0) {
+    throw new Error(`Missing externals in input config: ${missingExternals.join(',')}`);
+  }
+
+  const externalImports = groupItemsBy(
+    Object.entries(config.externalImportPaths ?? {}),
+    ([, path]) => path,
+    ([type]) => type
+  );
+
+  return [
+    [
+      `import { Types, Document } from 'mongoose';`,
+      ...Object.entries(externalImports).map(([path, types]) => `import { ${types.join(', ')} } from '${path}';`),
+    ].join('\n'),
+    ...enums,
+    ...models,
+    ...schemas,
+  ].join('\n\n');
 }
 
 function generateEnumType(name: string, data: Enum) {
@@ -36,7 +55,7 @@ function generateModelType(name: string, model: Model) {
   return generateSchemaType(name, model.schema, true);
 }
 
-function getTypeName(field: SchemaDataType): string {
+export function getTypeName(field: SchemaDataType): string {
   switch (field.type) {
     case 'String':
       return 'string';
@@ -52,6 +71,8 @@ function getTypeName(field: SchemaDataType): string {
       return getSchemaTypeName(field.refSchema);
     case 'ObjectId':
       return 'Types.ObjectId';
+    case 'External':
+      return field.refType;
     case 'Array': {
       const elementType = getTypeName(field.elementType);
       return field.elementRequired ? `${elementType}[]` : `(${elementType} | null)[]`;

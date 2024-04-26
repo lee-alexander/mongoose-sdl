@@ -3,28 +3,29 @@ import { groupItemsBy, toDictionary, uniqueValues, unwrap } from '../util';
 import { Enum, Schema, Model, DbDefinition, FlatSchemaDataType } from '../types';
 
 // Break overall document down into key sections - enums, models, schemas
-const TopLevelRegex = /(enum|model|schema) ([^{]*) {([^}]*)}/g;
+const TopLevelRegex = /(?:(enum|model|schema) ([^{]*) {([^}]*)})|(?:external (\w*))/g;
 
 export async function parseDbDefinitionFile(path: string): Promise<DbDefinition> {
   const fileBuffer = await fs.readFile(path);
   const contents = fileBuffer.toString();
   const parsedContent = parseContent(contents, TopLevelRegex);
 
-  const namesWithType = parsedContent.map(([, type, name]) => `${name}${type}`);
-  if (namesWithType.length !== uniqueValues(namesWithType).length) {
-    throw new Error('Duplicate type name detected');
+  const topLevelNames = parsedContent.map(([, , name, _, externalTypeName]) => name || externalTypeName);
+  if (topLevelNames.length !== uniqueValues(topLevelNames).length) {
+    throw new Error('Duplicate schema/model/enum/external name detected');
   }
 
   const contentByType = groupItemsBy(
     parsedContent,
-    ([, type]) => type as 'enum' | 'model' | 'schema',
-    ([, , name, contents]) => ({ name, contents })
+    ([, type, , , externalTypeName]) => (externalTypeName ? 'external' : (type as 'enum' | 'model' | 'schema')),
+    ([, , name, contents, externalTypeName]) => ({ name: name || externalTypeName, contents: contents || '' })
   );
 
   const namedTypes: NamedTypes = {
     enums: new Set((contentByType['enum'] ?? []).map((d) => d.name)),
     models: new Set((contentByType['model'] ?? []).map((d) => d.name)),
     schemas: new Set((contentByType['schema'] ?? []).map((d) => d.name)),
+    externals: new Set((contentByType['external'] ?? []).map((d) => d.name)),
   };
 
   const enums = toDictionary(
@@ -45,7 +46,9 @@ export async function parseDbDefinitionFile(path: string): Promise<DbDefinition>
     ({ contents }) => parseModelContents(contents, namedTypes)
   );
 
-  return { enums, schemas, models };
+  const externals = (contentByType['external'] ?? []).map((c) => c.name);
+
+  return { enums, schemas, models, externals };
 }
 
 const EnumRegex = /(\w+)/g;
@@ -98,7 +101,7 @@ function parseSchemaContents(contents: string, namedTypes: NamedTypes): Schema {
 
   const invalidDirectives = parsedFields
     .flatMap((f) => f.directives)
-    .filter((d) => d !== 'index' && d !== 'unique' && d !== 'immutable');
+    .filter((d) => d !== 'index' && d !== 'unique' && d !== 'immutable' && d !== 'virtual');
   if (invalidDirectives.length > 0) {
     throw new Error('Unknown directives: ' + invalidDirectives);
   }
@@ -124,6 +127,7 @@ function parseSchemaContents(contents: string, namedTypes: NamedTypes): Schema {
       isIndex: f.directives.includes('index'),
       isUnique: f.directives.includes('unique'),
       isImmutable: f.directives.includes('immutable'),
+      isVirtual: f.directives.includes('virtual'),
     })
   );
 }
@@ -153,6 +157,13 @@ function parseDataType(fieldName: string, fieldType: string, namedTypes: NamedTy
     };
   }
 
+  if (namedTypes.externals.has(fieldType)) {
+    return {
+      type: 'External',
+      refType: fieldType,
+    };
+  }
+
   if (namedTypes.models.has(fieldType)) {
     return {
       type: 'ObjectId',
@@ -174,6 +185,7 @@ interface NamedTypes {
   enums: Set<string>;
   schemas: Set<string>;
   models: Set<string>;
+  externals: Set<string>;
 }
 
 function parseContent(content: string, regex: RegExp) {
